@@ -1,68 +1,118 @@
-# V.I.T.A.L — Juego interactivo de Realidad Mixta (Merged Reality)
+# 🩺 V.I.T.A.L — Juego interactivo de Realidad Mixta (Merged Reality)
 
 Juego e interfaz interactiva de **realidad mixta** que simula el funcionamiento del
-dispositivo de monitoreo de salud **V.I.T.A.L** del plano adjunto
-(`assets/vital-reference.jpg`). El dispositivo virtual se fusiona con una sala
-clínica virtual o con **tu entorno real a través de la cámara**, y responde en
-tiempo real a tu **voz**, tus **gestos** y a las **condiciones dinámicas del entorno**.
+dispositivo de monitoreo de salud **V.I.T.A.L**: sensor de temperatura infrarrojo,
+pantalla OLED, micrófono MEMS, altavoz y LEDs de estado
+(🟢 Estable · 🟡 Revisión · 🔴 Alerta).
 
-## ▶️ Cómo ejecutar
+> **100 % autónoma:** toda la aplicación (HTML + CSS + JavaScript + la imagen del
+> plano del dispositivo) vive en **un único archivo `index.html`** (~240 KB).
+> No requiere servidor, ni build, ni npm, ni dependencias externas.
 
-Es una app web sin dependencias ni build. Basta un servidor estático:
+---
 
+## 🚀 Publicar en GitHub Pages (paso a paso)
+
+1. **Sube el repositorio a GitHub** (si aún no lo está):
+   ```bash
+   git add .
+   git commit -m "V.I.T.A.L SPA autónoma"
+   git push origin main
+   ```
+2. En GitHub, entra a tu repositorio → pestaña **⚙️ Settings**.
+3. En el menú lateral, sección **Code and automation**, haz clic en **Pages**.
+4. En **Build and deployment → Source**, selecciona **Deploy from a branch**.
+5. Elige la rama **`main`** y la carpeta **`/(root)`** y pulsa **Save**.
+6. Espera 1–2 minutos y recarga esa misma página: aparecerá tu URL pública:
+   ```
+   https://<tu-usuario>.github.io/<nombre-del-repo>/
+   ```
+7. Abre la URL… ¡y a jugar! 🎮
+
+> ✅ **Importante:** GitHub Pages sirve por **HTTPS**, que es justo lo que
+> necesitan la cámara web (`getUserMedia`) y el reconocimiento de voz
+> (Web Speech API) para funcionar. En local con `file://` algunos navegadores
+> bloquean cámara/micrófono; el resto del juego funciona igual.
+
+### Uso local sin servidor
+Descarga `index.html` y haz **doble clic** para abrirlo en el navegador.
+Para usar cámara y voz en local, sirve la carpeta con cualquier servidor
+estático, por ejemplo:
 ```bash
-python3 -m http.server 8000
-# abre http://localhost:8000
+python3 -m http.server 8000   # → http://localhost:8000
+```
+(`localhost` también es un contexto seguro válido para cámara y micrófono).
+
+---
+
+## 📁 Estructura del proyecto
+
+```
+.
+├── index.html   ← TODA la aplicación (HTML + CSS + JS + imagen, sin externos)
+└── README.md
 ```
 
-> La cámara y el reconocimiento de voz requieren HTTPS o `localhost`
-> (en Chrome/Edge). Sin ellos, todo lo demás funciona con botones y gestos táctiles.
+No hay carpetas `css/`, `js/` ni `assets/`: el CSS está en una etiqueta
+`<style>`, los cuatro módulos JS (audio, dispositivo, pacientes y lógica del
+juego) en etiquetas `<script>` al final del body, y la fotografía del plano
+del dispositivo está incrustada en base64.
+
+## 📷 Realidad Mixta en el navegador
+Al pulsar **📷 Cámara MR**, tu cámara en vivo (`navigator.mediaDevices.getUserMedia`)
+pasa a ser el fondo de la escena y la interfaz del dispositivo se **superpone**
+sobre tu rostro/entorno:
+- **HUD V.I.T.A.L** sobre el vídeo: LEDs de estado en vivo, temperatura medida
+  y barra tipo OLED con la pregunta actual.
+- **Guía facial** con zonas de gesto: mano a la **derecha = SÍ**, a la
+  **izquierda = NO** (detección de movimiento por canvas).
+- **Vista térmica** simulada del sensor IR e **indicador térmico flotante**
+  que sigue a la retícula mostrando la temperatura en tiempo real.
 
 ## 🩺 El dispositivo (réplica interactiva del plano)
 
 | Componente | Interacción |
 |---|---|
-| **Sensor de temperatura infrarrojo** | Clic en el sensor o en «Escanear»: aparece una retícula; mantén pulsado sobre la frente del paciente (o la tuya) para medir. Sufre **deriva** y se ve afectado por el calor ambiental: hay que **calibrarlo**. |
-| **Pantalla OLED** | Muestra preguntas («¿Tienes fiebre? Responda: Sí o No», como en el plano), la temperatura medida y la **forma de onda de audio en vivo**. Desliza ←/→ sobre ella para responder No/Sí. Se inclina en 3D con el puntero. |
-| **Micrófono MEMS** | Responde **por voz** («sí»/«no») y da **comandos hablados**: «escanear», «calibrar», «verde», «amarillo», «rojo» (Web Speech API, es-ES). El ruido ambiental puede arruinar las respuestas. |
-| **Altavoz** | El dispositivo y los pacientes **hablan** (síntesis de voz es-ES, con tono distinto por paciente). Clic en el altavoz repite el último mensaje. Tonos WebAudio para aciertos, alarmas y escaneos. |
-| **LEDs Verde/Amarillo/Rojo** | Estable / Revisión / Alerta. Son **clicables**: con ellos (o con los botones de triaje, las teclas 1-2-3 o la voz) tomas la decisión clínica. |
+| **Sensor infrarrojo** | Clic en el sensor o en «Escanear»: retícula + indicador flotante con la temperatura **en vivo**; mantén pulsado sobre la frente del paciente (o la tuya). Sufre **deriva** y le afecta el calor ambiental: hay que **calibrarlo**. |
+| **Pantalla OLED** | Visualizador de ondas de voz animado (canvas) y flujo de preguntas de triaje («¿Tienes fiebre? Responda: Sí o No»). Desliza ←/→ sobre ella para responder No/Sí. |
+| **Micrófono MEMS** | Reconocimiento de voz (Web Speech API, es-ES): responde «sí»/«no» y da comandos hablados («escanear», «calibrar», «verde», «amarillo», «rojo»). |
+| **Altavoz** | Síntesis de voz (TTS es-ES) que formula preguntas, narra resultados y emite alertas; tonos WebAudio de confirmación y alarma. Clic en el altavoz repite el último mensaje. |
+| **LEDs de estado** | 🟢 Estable · 🟡 Revisión · 🔴 Alerta, animados (brillo, parpadeo en alerta) y **clicables** para decidir el triaje. |
 
 ## 🎮 Modos de juego
 
 ### 🎯 Misión Triaje
-Atiende a **8 pacientes virtuales** generados con un modelo clínico oculto
-(temperatura real, 10 síntomas posibles, nivel de riesgo verdadero). Por paciente:
-1. **Escanea** su temperatura con el sensor IR (minijuego de puntería; los pacientes ansiosos se mueven).
-2. **Entrevístalo**: elige hasta 3 preguntas; el paciente responde por el altavoz con su propia voz.
-3. **Decide el triaje** antes de que se agote el tiempo: 🟢 Estable · 🟡 Revisión · 🔴 Alerta.
+Atiende a **8 pacientes virtuales** con un modelo clínico oculto (temperatura
+real, 10 síntomas, riesgo verdadero): escanea su temperatura, entrevístalos
+(hasta 3 preguntas) y clasifícalos antes de que se acabe el tiempo.
+Puntuación con bonus por rapidez y racha, y **eventos aleatorios del entorno**
+(🥵 ola de calor, 📢 sala ruidosa, 🧲 interferencia del sensor, 😟 paciente
+ansioso) que alteran las mediciones en tiempo real.
 
-Puntuación con bonus por rapidez y racha; clasificar una 🔴 como 🟢 (o al revés)
-es un *error peligroso* con alarma. **Eventos aleatorios del entorno** (ola de
-calor 🥵, sala ruidosa 📢, interferencia del sensor 🧲, paciente ansioso 😟)
-alteran las mediciones en tiempo real y obligan a adaptarse.
-
-### 🧪 Laboratorio Libre
-Paciente virtual configurable (temperatura real con deslizador y síntomas
-activables) para observar cómo reacciona el dispositivo: aquí la unidad
-**evalúa automáticamente** con sus LED a partir de los datos medidos.
-Incluye la **Autoevaluación MR**: con la cámara activada, el sensor mide tu
-frente (muestreo de imagen), el dispositivo te entrevista y respondes con
-**voz, botones, deslizamiento en la OLED o gestos de mano frente a la cámara**
-(derecha = SÍ, izquierda = NO, por detección de movimiento). Vista térmica
-simulada del sensor incluida.
+### 🧪 Laboratorio Libre + Autoevaluación MR
+Paciente configurable (temperatura y síntomas) donde el dispositivo evalúa
+automáticamente con sus LED, y **Autoevaluación MR**: la cámara mide tu frente,
+el dispositivo te entrevista y respondes por voz, botones, gestos o deslizando
+en la OLED.
 
 ## 🌍 Entorno virtual dinámico
-Deslizadores de **temperatura ambiente** y **ruido** más eventos instantáneos:
-el calor eleva las lecturas IR, el ruido dificulta la entrevista por el
-micrófono MEMS y la deriva del sensor crece con el tiempo (la precisión se
-muestra junto a la batería del dispositivo).
+Deslizadores de temperatura ambiente y ruido: el calor eleva las lecturas IR,
+el ruido dificulta la entrevista por el micrófono MEMS y la deriva del sensor
+crece con el tiempo (precisión y batería visibles junto al dispositivo).
 
 ## 🛠️ Tecnología
-HTML + CSS + JavaScript vanilla (sin build ni dependencias):
-Web Speech API (reconocimiento y síntesis en español), WebAudio, getUserMedia,
-Canvas (forma de onda OLED y detección de movimiento), SVG generado por código
-(avatares de pacientes con expresiones según su estado).
+HTML + CSS + JavaScript **vanilla en un solo archivo**: Web Speech API
+(reconocimiento y síntesis en español), WebAudio, `getUserMedia`, Canvas
+(visualizador OLED, escaneo y detección de movimiento) y SVG generado por
+código (avatares con expresiones según su estado). **Cero dependencias.**
+
+## 🔧 Problemas frecuentes
+- **La cámara no se activa:** concede el permiso y usa la URL de GitHub Pages
+  (HTTPS) o `http://localhost`. En `file://`, Chrome puede bloquearla.
+- **No me escucha:** el reconocimiento de voz funciona en Chrome/Edge; en
+  otros navegadores usa botones, gestos MR o desliza en la pantalla OLED.
+- **La medición sale rara:** revisa la deriva del sensor y la temperatura
+  ambiente; pulsa **🧭 Calibrar sensor**.
 
 ## ⚠️ Aviso
 Simulación con fines **educativos y de divulgación**. No es un dispositivo
