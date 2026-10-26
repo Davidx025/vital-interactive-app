@@ -81,9 +81,30 @@ El botón **🥽 Entrar en VR/MR** usa la **WebXR API** (`immersive-ar` /
 `immersive-vr`) y convierte la escena en un **puesto de triaje jugable
 dentro del visor**, construido con primitivas WebGL (planos y cajas):
 
-- **Escenarios 3D completos** según el entorno: 🏥 hospital (luces de
-  techo, ventana, panel de gases, cama, portasueros y monitor de signos
-  con ECG animado según el riesgo) o ⛺ carpa de triaje (lona a dos aguas
+- **Disposición frontal y central:** el dispositivo V.I.T.A.L 3D (réplica
+  de gran escala con textura en alta resolución: OLED nítida, lente IR,
+  LEDs y rejillas) y el panel de control aparecen **directamente frente
+  a la vista del usuario**, frente a la camilla — sin elementos repartidos
+  a los lados —. Los botones 3D son grandes y legibles:
+  **[🌡️ ESCANEAR] · [👍 SÍ] · [👎 NO] · [📋 EVALUAR]**.
+- **Modo «Jugador como Paciente» por defecto:** al entrar en VR/MR, el
+  usuario **es el paciente** de la unidad de triaje. Al pulsar ESCANEAR,
+  el sensor infrarrojo simula la toma sobre su frente y asigna una
+  **temperatura realista aleatoria entre 36.2 °C y 39.8 °C**.
+- **Flujo de preguntas clínicas por defecto y dinámicas:** se carga una
+  secuencia predeterminada que se muestra prominente en la OLED —
+  *1. ¿Tienes fiebre o escalofríos? → 2. ¿Te cuesta respirar? →
+  3. ¿Dolor de cabeza o mareo?* — y **avanza automáticamente** al pulsar
+  SÍ/NO o responder por voz («sí» / «no»).
+- **Diagnóstico y LEDs en tiempo real:** al terminar, la autoevaluación
+  se procesa al instante: se encienden los **LEDs del hardware**
+  (🟢 Estable · 🟡 Revisión · 🔴 Alerta) y el veredicto se muestra en la
+  **OLED del dispositivo 3D** y en el **holograma sobre la camilla**, con
+  síntesis de voz. El mismo panel sirve para escanear y evaluar a los
+  pacientes virtuales.
+- **Escenarios 3D** según el entorno: 🏥 hospital (luces de techo,
+  ventana, panel de gases, cama, portasueros y monitor de signos con ECG
+  animado según el riesgo) o ⛺ carpa de triaje (lona a dos aguas
   verde/blanca, luces de campaña, camilla de campo, cajas de suministros
   y bombona de O₂).
 - **Réplica 3D del dispositivo V.I.T.A.L** flotando frente a la camilla:
