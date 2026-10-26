@@ -69,6 +69,27 @@ sobre tu rostro/entorno:
 - **Vista térmica** simulada del sensor IR e **indicador térmico flotante**
   que sigue a la retícula mostrando la temperatura en tiempo real.
 
+## 🌍 Selector de entornos (sobre el panel «Entorno Mixto»)
+| Entorno | Descripción |
+|---|---|
+| 📷 **Cámara Real (MR Passthrough)** | Vídeo de tu webcam en vivo con el dispositivo superpuesto. |
+| 🏥 **Sala de Hospital** | Unidad de triaje renderizada en SVG: monitor de signos con ECG animado, cama, portasueros, panel de gases y señalética. |
+| ⛺ **Carpa de Atención Médica** | Triaje de campaña en SVG: interior de carpa, camilla, cajas de suministros, bombona de O₂ y lámpara. El polvo y el calor añaden **+0,1 °C de deriva** al sensor IR. |
+
+## 🥽 WebXR básico (gafas VR/MR)
+El botón **🥽 Entrar en VR/MR** usa la **WebXR API**: detecta sesiones
+`immersive-ar` / `immersive-vr` y proyecta en el visor una escena 3D WebGL
+con el entorno elegido y un **panel V.I.T.A.L flotante con tus datos en vivo**
+(temperatura, LED de estado, pregunta actual y paciente). Sin visor
+disponible, abre una **vista previa 3D en pantalla** controlable por arrastre.
+
+## 🧑‍🤝‍🧑 Avatares sincronizados con la ficha clínica
+Cada paciente se genera con un catálogo demográfico estricto: el avatar
+**siempre** coincide con el nombre, el sexo y el rango de edad de su ficha
+(niños, jóvenes, adultos y adultos mayores). Nada de ancianas con barba ni
+niños calvos: pelo y canas, peinados, barba/bigote, arrugas, gafas y voz se
+derivan del sexo y la edad, y la expresión refleja su diagnóstico.
+
 ## 🩺 El dispositivo (réplica interactiva del plano)
 
 | Componente | Interacción |
@@ -103,8 +124,9 @@ crece con el tiempo (precisión y batería visibles junto al dispositivo).
 ## 🛠️ Tecnología
 HTML + CSS + JavaScript **vanilla en un solo archivo**: Web Speech API
 (reconocimiento y síntesis en español), WebAudio, `getUserMedia`, Canvas
-(visualizador OLED, escaneo y detección de movimiento) y SVG generado por
-código (avatares con expresiones según su estado). **Cero dependencias.**
+(visualizador OLED, escaneo y detección de movimiento), SVG generado por
+código (avatares demográficos y fondos de hospital/carpa) y **WebXR + WebGL**
+para la proyección en visores VR/MR. **Cero dependencias.**
 
 ## 🔧 Problemas frecuentes
 - **La cámara no se activa:** concede el permiso y usa la URL de GitHub Pages
