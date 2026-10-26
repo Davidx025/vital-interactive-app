@@ -76,32 +76,44 @@ sobre tu rostro/entorno:
 | 🏥 **Sala de Hospital** | Unidad de triaje renderizada en SVG: monitor de signos con ECG animado, cama, portasueros, panel de gases y señalética. |
 | ⛺ **Carpa de Atención Médica** | Triaje de campaña en SVG: interior de carpa, camilla, cajas de suministros, bombona de O₂ y lámpara. El polvo y el calor añaden **+0,1 °C de deriva** al sensor IR. |
 
-## 🥽 WebXR (gafas VR/MR) con escenarios 3D completos
-El botón **🥽 Entrar en VR/MR** usa la **WebXR API**: detecta sesiones
-`immersive-ar` / `immersive-vr` y proyecta en el visor el **escenario 3D
-del entorno seleccionado**, construido con primitivas WebGL (planos y cajas):
+## 🥽 WebXR (gafas VR/MR): sistema de triaje 100 % interactivo in-VR
+El botón **🥽 Entrar en VR/MR** usa la **WebXR API** (`immersive-ar` /
+`immersive-vr`) y convierte la escena en un **puesto de triaje jugable
+dentro del visor**, construido con primitivas WebGL (planos y cajas):
 
-- **🏥 Hospital 3D:** habitación clínica con paredes, luces de techo,
-  ventana, puerta, panel de gases, monitor de signos con ECG animado y
-  portasueros.
-- **⛺ Carpa de Triaje 3D:** carpa a dos aguas verde/blanca, luces de
-  campaña colgantes, camilla de campo con manta de cruz roja, cajas de
-  suministros y bombona de oxígeno.
-- **Posicionamiento ergonómico:** el **paciente virtual** (su avatar con la
-  expresión de su diagnóstico, como textura viva) yace semirrecostado
-  **sobre la camilla**, y el **dispositivo V.I.T.A.L flota** frente al
-  usuario a la altura de la vista con sus datos en tiempo real
-  (temperatura, LED, pregunta y paciente). Una segunda pantalla tras el
-  usuario permite interactuar en **360°**.
-- **Orientación corregida:** las texturas se suben a la GPU con
-  `UNPACK_FLIP_Y_WEBGL = true` (equivalente a `texture.flipY` en three.js)
-  y la geometría usa frente +Z con UV estándar, de modo que el panel
-  **nunca se ve al revés ni reflejado**: los textos se leen de frente,
-  también en la cara trasera del dispositivo y en la pantalla de la espalda.
-  En `immersive-ar` el fondo se limpia con alfa 0 para no ocluir el mundo real.
+- **Escenarios 3D completos** según el entorno: 🏥 hospital (luces de
+  techo, ventana, panel de gases, cama, portasueros y monitor de signos
+  con ECG animado según el riesgo) o ⛺ carpa de triaje (lona a dos aguas
+  verde/blanca, luces de campaña, camilla de campo, cajas de suministros
+  y bombona de O₂).
+- **Réplica 3D del dispositivo V.I.T.A.L** flotando frente a la camilla:
+  chasis blanco industrial con lente IR (se ilumina al escanear),
+  **pantalla OLED reactiva** (pregunta, temperatura y onda de voz en
+  vivo), **LEDs de hardware** que se encienden según el estado y rejillas
+  de altavoz/micrófono MEMS, todo como textura dinámica sobre la caja 3D.
+- **Botones interactivos 3D con raycasting** (gatillo del controlador con
+  puntero láser, o clic del ratón en la vista previa):
+  **🌡️ Escanear Temperatura** (haz infrarrojo animado desde el sensor
+  hasta la frente del paciente y medición real), **👍 SÍ / 👎 NO**
+  (responden la entrevista) y **📋 Finalizar Triaje** (procesa los
+  síntomas y evalúa; en misión puntúa como una decisión más).
+- **Voz integrada en VR:** reconocimiento continuo (Web Speech API)
+  mientras estás inmerso: di **«escanear»**, **«sí»**, **«no»** o
+  **«finalizar»** (cede el micrófono a la entrevista cuando el dispositivo
+  te pregunta directamente).
+- **Diagnóstico final in-VR:** el resultado aparece a la vez en la
+  **OLED del dispositivo 3D** y en un **holograma flotante sobre el
+  paciente**: temperatura escaneada, estado del LED
+  (🟢 Estable · 🟡 Revisión · 🔴 Alerta) y resumen del diagnóstico
+  (p. ej. «Jorge, 61 años — Alerta · fiebre alta»).
+- **Orientación corregida:** texturas subidas con
+  `UNPACK_FLIP_Y_WEBGL = true` y frente +Z: los textos **nunca** salen al
+  revés ni reflejados; hay además una pantalla informativa a la espalda
+  para la interacción en **360°**, y en `immersive-ar` el fondo se limpia
+  con alfa 0 para no ocluir el mundo real.
 
-Sin visor disponible, la misma escena se abre como **vista previa 3D en
-pantalla** controlable por arrastre.
+Sin visor disponible, la **misma escena interactiva** se abre como vista
+previa 3D en pantalla (clic en los botones, arrastre para mirar).
 
 ## 🧑‍🤝‍🧑 Avatares sincronizados con la ficha clínica
 Cada paciente se genera con un catálogo demográfico estricto: el avatar
