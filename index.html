@@ -935,7 +935,7 @@ small{color:var(--ink-faint);font-weight:400}
 <div class="xr-overlay" id="xr-overlay" hidden>
   <canvas id="xr-canvas" width="1280" height="720"></canvas>
   <div class="xr-bar">
-    <span>🥽 <b>Triaje VR interactivo</b> · Haz clic en los botones 3D (Escanear / SÍ / NO / Finalizar), di «escanear», «sí», «no» o «finalizar», y arrastra para girar 360°</span>
+    <span>🥽 <b>Modo Paciente VR</b> · Pulsa 🌡️ ESCANEAR y responde las preguntas con 👍 SÍ / 👎 NO o con tu voz · 📋 EVALUAR muestra tu diagnóstico · Arrastra para girar 360°</span>
     <button class="mini-btn" id="btn-xr-exit">✕ Salir de VR/MR</button>
   </div>
 </div>
@@ -954,7 +954,7 @@ small{color:var(--ink-faint);font-weight:400}
       <div><h4>📷 Realidad mixta (MR)</h4><p>Con la <b>Cámara MR</b> tu entorno real se fusiona con el dispositivo virtual: hazte una autoevaluación, deja que el sensor mida tu frente y responde a la entrevista con voz o gestos. La vista térmica simula la imagen del sensor IR.</p></div>
       <div><h4>🌍 Entorno dinámico</h4><p>Olas de calor, salas ruidosas e interferencias ocurren al azar durante la misión y alteran el comportamiento del dispositivo en tiempo real. Adáptate: recalibrar y repetir preguntas es parte del trabajo.</p></div>
       <div><h4>🏥 Entornos virtuales</h4><p>El selector sobre la escena cambia el fondo: <b>📷 Cámara Real</b> (tu webcam, MR passthrough), <b>🏥 Sala de Hospital</b> renderizada y <b>⛺ Carpa de Atención Médica</b> de campaña, donde el polvo y el calor añaden deriva al sensor IR.</p></div>
-      <div><h4>🥽 VR/MR (WebXR)</h4><p>El botón <b>Entrar en VR/MR</b> abre el <b>sistema de triaje inmersivo</b>: el escenario 3D del entorno elegido, el paciente sobre la camilla con su <b>holograma clínico</b>, la <b>réplica 3D del dispositivo</b> (OLED reactiva, LEDs y rejillas) flotando frente a ti y un <b>panel de botones 3D</b> — 🌡️ Escanear, 👍 SÍ, 👎 NO, 📋 Finalizar — que se pulsan con el gatillo del controlador o con clic, o por <b>voz</b> («escanear», «sí», «no», «finalizar»). El resultado se muestra en la OLED del dispositivo 3D y en el holograma sobre el paciente. Sin visor, la misma escena funciona como vista previa 3D en pantalla.</p></div>
+      <div><h4>🥽 VR/MR (WebXR)</h4><p>Al entrar en VR/MR se activa por defecto el modo <b>«Jugador como Paciente»</b>: el <b>dispositivo V.I.T.A.L 3D</b> y el <b>panel de control</b> aparecen grandes y centrados frente a ti. Pulsa <b>🌡️ ESCANEAR</b> (o di «escanear») y el sensor medirá tu frente; después el dispositivo te hará <b>3 preguntas clínicas</b> que avanzan solas al responder con los botones <b>👍 SÍ / 👎 NO</b> o con tu voz. Al final, los <b>LEDs</b> se encienden con tu veredicto en la OLED y en el holograma, narrado por voz. También puedes evaluar a los pacientes virtuales de la camilla con el mismo panel.</p></div>
       <div><h4>🧑‍🤝‍🧑 Pacientes coherentes</h4><p>Cada avatar coincide estrictamente con su ficha (nombre, sexo y edad): niños, jóvenes, adultos y adultos mayores con canas, arrugas, barba o gafas según corresponda, y expresiones según su diagnóstico.</p></div>
     </div>
     <p class="help-note">⚠️ Simulación educativa. No es un dispositivo médico real ni sustituye valoración profesional.</p>
@@ -1791,7 +1791,10 @@ function finishScan() {
   VitalAudio.fx.measure();
 
   if (S.phase === "selfscan" && S.self) {
-    const measured = sampleSelfTemperature();
+    // En VR (Jugador como Paciente): el sensor asigna una temperatura realista 36.2–39.8 °C
+    const measured = XRView.mode
+      ? Math.round((36.2 + Math.random() * 3.6) * 10) / 10
+      : sampleSelfTemperature();
     S.self.measuredTemp = measured; S.lastTemp = measured;
     Device.oled({ top: "TU TEMPERATURA", main: `🌡️ ${measured.toFixed(1)} °C`, sub: "Medición frontal completada" });
     Device.say("Tu temperatura", `${measured.toFixed(1)} grados. Ahora responderás unas preguntas.`, {});
@@ -2184,21 +2187,32 @@ function sampleSelfTemperature() {
 
 async function startSelfInterview() {
   S.phase = "selfask";
-  const qs = ["feverFeel", "cough", "breath", "dizzy"];
-  for (const qid of qs) {
-    const s = SYM_BY_ID[qid];
-    Device.oled({ top: "V.I.T.A.L TE PREGUNTA", main: s.q, sub: "Responde: Sí o No (voz, gesto, botones o desliza en la OLED)" });
-    Device.say(s.q, "Responda: sí o no.", {});
-    Device.setStatus("Esperando tu respuesta…", "busy");
+  // Secuencia clínica predeterminada (dinámica: avanza con cada respuesta)
+  const seq = [
+    { ids: ["feverFeel"], q: SYM_BY_ID.feverFeel.q, label: "1. Fiebre o escalofríos" },
+    { ids: ["breath"], q: SYM_BY_ID.breath.q, label: "2. Dificultad para respirar" },
+    { ids: ["headache", "dizzy"], q: "¿Tiene dolor de cabeza o se ha sentido mareado?", label: "3. Dolor de cabeza o mareo" },
+  ];
+  let step = 0;
+  for (const item of seq) {
+    step++;
+    Device.oled({ top: `PREGUNTA ${step}/${seq.length} · MODO PACIENTE`, main: item.q, sub: "Responde: Sí o No (botones 3D, voz, gestos o desliza en la OLED)" });
+    Device.say(item.q, "Responda: sí o no.", {});
+    Device.setStatus(`Pregunta ${step}/${seq.length}…`, "busy");
     const ans = await waitForUserAnswer();
-    S.self.symptoms[qid] = ans === "yes";
+    item.ids.forEach(id => S.self.symptoms[id] = ans === "yes");
     VitalAudio.fx.confirm();
-    log(`Autoevaluación · «${s.label}» → respondiste <b>${ans === "yes" ? "SÍ" : "NO"}</b>.`);
+    log(`Autoevaluación · «${item.label}» → respondiste <b>${ans === "yes" ? "SÍ" : "NO"}</b>. Avanzando a la siguiente…`);
   }
   // Veredicto del dispositivo
   const pseudo = { realTemp: S.self.measuredTemp, symptoms: { ...S.self.symptoms } };
   SYMPTOMS.forEach(s => { if (!(s.id in pseudo.symptoms)) pseudo.symptoms[s.id] = false; });
   const risk = computeRisk(pseudo);
+  S.lastVerdict = {
+    kind: "self", level: risk.level, temp: S.self.measuredTemp,
+    title: "Tu autoevaluación",
+    detail: risk.reasons.length ? risk.reasons.join(", ") : "sin signos de alarma"
+  };
   Device.setLED(risk.level, { blink: risk.level === "red" });
   Device.oled({
     top: "TU RESULTADO",
@@ -2216,7 +2230,10 @@ async function startSelfInterview() {
   S.phase = "attend";
   enterLabRefreshOnly();
 }
-function enterLabRefreshOnly() { if (S.mode === "lab" && !S.patient) enterLab(); }
+/* Tras la autoevaluación SOLO se refresca la UI del laboratorio: el veredicto
+   (LED encendido, OLED y holograma) debe PERMANECER visible — nada de
+   reiniciar el dispositivo ni generar otro paciente por encima. */
+function enterLabRefreshOnly() { if (S.mode === "lab") refreshChips(); }
 
 /* ── Esperar respuesta del usuario (voz / gestos / botones / deslizamiento) ── */
 function waitForUserAnswer() {
@@ -2406,9 +2423,9 @@ const XRView = (() => {
   let _lasers = [], _forehead = [0, 0.4, -2.6], _devPos = [0.68, 0.16, -1.28];
   const panel = document.createElement("canvas"); panel.width = 512; panel.height = 300;
   const monPanel = document.createElement("canvas"); monPanel.width = 256; monPanel.height = 160;
-  const devPanel = document.createElement("canvas"); devPanel.width = 512; devPanel.height = 700;
+  const devPanel = document.createElement("canvas"); devPanel.width = 640; devPanel.height = 875; // 1.25× para una OLED nítida
   const holoPanel = document.createElement("canvas"); holoPanel.width = 512; holoPanel.height = 256;
-  const headerPanel = document.createElement("canvas"); headerPanel.width = 512; headerPanel.height = 72;
+  const headerPanel = document.createElement("canvas"); headerPanel.width = 512; headerPanel.height = 288;
 
   const VS = "attribute vec3 p; attribute vec2 uv; uniform mat4 m; varying vec2 vUv;" +
              "void main(){ vUv = uv; gl_Position = m * vec4(p, 1.0); }";
@@ -2553,6 +2570,7 @@ const XRView = (() => {
     if (now - lastDevDraw < 200) return;
     lastDevDraw = now;
     const g = devPanel.getContext("2d");
+    g.setTransform(1.25, 0, 0, 1.25, 0, 0); // dibuja en coordenadas 512×700 sobre un lienzo HD
     // chasis blanco industrial
     const grad = g.createLinearGradient(0, 0, 0, 700);
     grad.addColorStop(0, "#f4f5f7"); grad.addColorStop(0.55, "#dde0e4"); grad.addColorStop(1, "#c3c8cf");
@@ -2691,7 +2709,7 @@ const XRView = (() => {
   function drawHoloTexture() {
     const p = S.patient, v = S.lastVerdict, led = Device.getLED();
     const key = [p ? p.name : "self", p && p.measuredTemp, led || "", v ? v.level + v.title : "",
-      XRView._scanning ? Math.round(XRView._scanT * 12) : ""].join("|");
+      XRView._scanning ? Math.round(XRView._scanT * 12) : "", S.self ? Object.keys(S.self.symptoms || {}).length : 0].join("|");
     if (key === holoKey) return;
     holoKey = key;
     const g = holoPanel.getContext("2d");
@@ -2739,12 +2757,13 @@ const XRView = (() => {
   }
   function drawHeaderTexture() {
     const g = headerPanel.getContext("2d");
-    g.fillStyle = "rgba(4,16,28,.88)"; rr(g, 2, 2, 508, 68, 14); g.fill();
-    g.strokeStyle = "rgba(34,211,238,.6)"; g.lineWidth = 2; g.stroke();
-    g.fillStyle = "#a5f3fc"; g.font = "700 26px sans-serif";
-    g.fillText("🎛️  CONTROL DE TRIAJE", 22, 45);
-    g.fillStyle = "#7d93b8"; g.font = "17px sans-serif";
-    g.fillText("apunta y pulsa · o usa tu voz", 300, 45);
+    g.fillStyle = "rgba(4,16,28,.94)"; rr(g, 2, 2, 508, 284, 18); g.fill();
+    g.strokeStyle = "rgba(34,211,238,.65)"; g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = "#a5f3fc"; g.font = "700 30px sans-serif"; g.textAlign = "center";
+    g.fillText("🎛️ CONTROL DE TRIAJE", 256, 46);
+    g.fillStyle = "#7d93b8"; g.font = "19px sans-serif";
+    g.fillText("apunta y pulsa · o responde con tu voz", 256, 74);
+    g.textAlign = "left";
     if (gl && headerTex) uploadTex(headerTex, headerPanel);
   }
 
@@ -2773,15 +2792,16 @@ const XRView = (() => {
 
   /* ── Botones interactivos 3D (raycasting) ──────────────── */
   const BUTTONS = [
-    { id: "scan",   label: "🌡️ Escanear",  sub: "Temperatura IR",  color: "#0e7490", lx: -0.19, ly: 0.105 },
-    { id: "yes",    label: "👍 SÍ",        sub: "Responder sí",    color: "#15803d", lx: 0.19,  ly: 0.105 },
-    { id: "no",     label: "👎 NO",        sub: "Responder no",    color: "#b91c1c", lx: -0.19, ly: -0.085 },
-    { id: "finish", label: "📋 Finalizar", sub: "Evaluar triaje",  color: "#6d28d9", lx: 0.19,  ly: -0.085 },
+    { id: "scan",   label: "🌡️ ESCANEAR", sub: "Medir temperatura", color: "#0e7490", lx: -0.25, ly: 0.045 },
+    { id: "yes",    label: "👍 SÍ",       sub: "Responder sí",      color: "#15803d", lx: 0.25,  ly: 0.045 },
+    { id: "no",     label: "👎 NO",       sub: "Responder no",      color: "#b91c1c", lx: -0.25, ly: -0.175 },
+    { id: "finish", label: "📋 EVALUAR",  sub: "Diagnóstico final", color: "#6d28d9", lx: 0.25,  ly: -0.175 },
   ];
-  const CP = { c: [-0.72, 0.0, -1.28], ry: 0.45 };
+  // Disposición FRONTAL Y CENTRAL: panel frente a la camilla, bajo el dispositivo
+  const CP = { c: [0, -0.58, -1.3], ry: 0 };
   for (const b of BUTTONS) {
-    b.w = 0.35; b.h = 0.155; b.pressT = 0; b.tex = null;
-    b.cv = document.createElement("canvas"); b.cv.width = 256; b.cv.height = 112;
+    b.w = 0.46; b.h = 0.195; b.pressT = 0; b.tex = null;
+    b.cv = document.createElement("canvas"); b.cv.width = 320; b.cv.height = 140;
   }
   function buttonEnabled(b) {
     if (b.id === "scan") return S.phase === "selfscan" || (!!S.patient && (S.mode !== "mission" || S.phase === "attend"));
@@ -2798,14 +2818,14 @@ const XRView = (() => {
     for (const b of BUTTONS) {
       if (!b.tex && gl) b.tex = makeTex();
       const g = b.cv.getContext("2d"), on = buttonEnabled(b);
-      g.clearRect(0, 0, 256, 112);
+      g.clearRect(0, 0, 320, 140);
       g.globalAlpha = on ? 1 : 0.45;
-      rr(g, 4, 4, 248, 104, 18); g.fillStyle = b.color; g.fill();
-      g.strokeStyle = hoverId === b.id ? "#a5f3fc" : "rgba(255,255,255,.65)"; g.lineWidth = hoverId === b.id ? 5 : 3; g.stroke();
-      g.fillStyle = "#fff"; g.font = "800 30px sans-serif"; g.textAlign = "center";
-      g.fillText(b.label, 128, 52);
-      g.font = "500 19px sans-serif"; g.fillStyle = "rgba(255,255,255,.85)";
-      g.fillText(on ? b.sub : (b.id === "yes" || b.id === "no" ? "esperando pregunta…" : "no disponible"), 128, 84);
+      rr(g, 4, 4, 312, 132, 20); g.fillStyle = b.color; g.fill();
+      g.strokeStyle = hoverId === b.id ? "#a5f3fc" : "rgba(255,255,255,.65)"; g.lineWidth = hoverId === b.id ? 6 : 3.5; g.stroke();
+      g.fillStyle = "#fff"; g.font = "800 37px sans-serif"; g.textAlign = "center";
+      g.fillText(b.label, 160, 64);
+      g.font = "500 22px sans-serif"; g.fillStyle = "rgba(255,255,255,.88)";
+      g.fillText(on ? b.sub : (b.id === "yes" || b.id === "no" ? "esperando pregunta…" : "no disponible"), 160, 102);
       g.textAlign = "left"; g.globalAlpha = 1;
       if (gl && b.tex) uploadTex(b.tex, b.cv);
     }
@@ -2836,18 +2856,17 @@ const XRView = (() => {
   }
   function drawControlPanel(base) {
     const ry = CP.ry, right = [Math.cos(ry), 0, -Math.sin(ry)], nrm = [Math.sin(ry), 0, Math.cos(ry)];
-    // fondo del panel y cabecera
-    box(base, CP.c[0], CP.c[1], CP.c[2], 0.84, 0.56, 0.02, { c: [0.04, 0.09, 0.16, 0.92] }, { ry });
-    face(base, CP.c[0], CP.c[1] + 0.335, CP.c[2], { ry }, 0.8, 0.11, { tex: headerTex });
+    // fondo frontal y centrado (con la cabecera integrada en su textura)
+    box(base, CP.c[0], CP.c[1], CP.c[2], 1.08, 0.68, 0.02, { c: [0.04, 0.09, 0.16, 0.94], tex: headerTex }, { ry });
     for (const b of BUTTONS) {
-      const c = [CP.c[0] + right[0] * b.lx, CP.c[1] + b.ly, CP.c[2] + right[2] * b.lx];
+      const c = [CP.c[0] + right[0] * b.lx + nrm[0] * 0.026, CP.c[1] + b.ly, CP.c[2] + right[2] * b.lx + nrm[2] * 0.026];
       b._c = c; b._n = nrm; b._r = right;
       const pressed = performance.now() - b.pressT < 200;
       const pc = pressed ? [c[0] - nrm[0] * 0.014, c[1], c[2] - nrm[2] * 0.014] : c;
       if (hoverId === b.id || pressed)
-        face(base, c[0] - nrm[0] * 0.008, c[1], c[2] - nrm[2] * 0.008, { ry }, b.w + 0.025, b.h + 0.025,
+        face(base, c[0] - nrm[0] * 0.008, c[1], c[2] - nrm[2] * 0.008, { ry }, b.w + 0.03, b.h + 0.03,
           { c: pressed ? [1, 0.5, 0.4, 0.9] : [0.3, 0.85, 1, 0.85] });
-      box(base, pc[0], pc[1], pc[2], b.w, b.h, 0.028, { c: [0.1, 0.14, 0.2, 1], tex: b.tex }, { ry });
+      box(base, pc[0], pc[1], pc[2], b.w, b.h, 0.03, { c: [0.1, 0.14, 0.2, 1], tex: b.tex }, { ry });
     }
   }
 
@@ -2856,25 +2875,27 @@ const XRView = (() => {
     _forehead = [0, bedTopY + 0.58, headZ - 0.04];
     // paciente semirrecostado sobre la camilla
     if (patientTex) face(base, 0, bedTopY + 0.36, headZ, { rx: -0.42 }, 0.62, 0.66, { tex: patientTex });
-    else face(base, 0, bedTopY + 0.36, headZ, { rx: -0.42 }, 0.62, 0.66, { c: [0.92, 0.76, 0.6, 1] });
+    else if (S.patient) face(base, 0, bedTopY + 0.36, headZ, { rx: -0.42 }, 0.62, 0.66, { c: [0.92, 0.76, 0.6, 1] });
+    // en modo «Jugador como Paciente» la camilla queda libre: el paciente eres tú
     // holograma flotante sobre el paciente (con su marco luminoso)
     const bobH = Math.sin(performance.now() / 1100) * 0.015;
-    face(base, 0, bedTopY + 1.06 + bobH, headZ + 0.02, {}, 1.0, 0.52, { c: [0.2, 0.8, 1, 0.16] });
-    face(base, 0, bedTopY + 1.06 + bobH, headZ + 0.045, {}, 0.94, 0.47, { tex: holoTex });
+    face(base, 0, bedTopY + 1.18 + bobH, headZ + 0.02, {}, 1.0, 0.52, { c: [0.2, 0.8, 1, 0.16] });
+    face(base, 0, bedTopY + 1.18 + bobH, headZ + 0.045, {}, 0.94, 0.47, { tex: holoTex });
     // dispositivo V.I.T.A.L 3D: chasis con cara frontal reactiva (OLED/LEDs/rejillas)
     const bob = Math.sin(performance.now() / 900) * 0.018;
     const led = Device.getLED();
     if (led) { // halo según el LED activo
       const hc = led === "red" ? [1, 0.25, 0.25, 0.16] : led === "yellow" ? [1, 0.85, 0.2, 0.16] : [0.2, 0.9, 0.4, 0.16];
-      face(base, 0.68, 0.03 + bob, -1.365, { ry: -0.42 }, 0.56, 0.72, { c: hc });
+      face(base, 0, 0.1 + bob, -1.515, {}, 0.66, 0.84, { c: hc });
     }
-    box(base, 0.68, 0.03 + bob, -1.32, 0.42, 0.575, 0.045,
-      { c: [0.82, 0.83, 0.85, 1], tex: deviceTex, back: [0.6, 0.62, 0.65, 1], top: [0.9, 0.9, 0.92, 1] }, { ry: -0.42 });
-    _devPos = [0.62, 0.2 + bob, -1.27];
+    // Dispositivo CENTRADO frente a la vista (y frente a la camilla), a gran escala
+    box(base, 0, 0.1 + bob, -1.48, 0.5, 0.685, 0.05,
+      { c: [0.82, 0.83, 0.85, 1], tex: deviceTex, back: [0.6, 0.62, 0.65, 1], top: [0.9, 0.9, 0.92, 1] });
+    _devPos = [0, 0.32 + bob, -1.44];
     // haz infrarrojo durante el escaneo VR
     if (XRView._scanning) drawBeam(base, _devPos, _forehead, XRView._scanT || 0);
     // pantalla informativa a la espalda (legible al girar 180°)
-    face(base, -0.35, 0.12, 1.78, { ry: Math.PI }, 1.05, 0.6, { tex: panelTex });
+    face(base, 0, 0.12, 1.8, { ry: Math.PI }, 1.05, 0.6, { tex: panelTex });
     // panel de control con botones 3D
     drawControlPanel(base);
     // punteros láser de los controladores (solo sesión XR)
@@ -2996,6 +3017,7 @@ const XRView = (() => {
     try { refSpace = await session.requestReferenceSpace("local"); }
     catch (e) { refSpace = await session.requestReferenceSpace("viewer"); }
     mode = "xr";
+    if (typeof onVREnter === "function") onVREnter();
     session.addEventListener("end", () => { session = null; mode = null; _lasers = []; log("🥽 Sesión VR/MR finalizada."); });
     // Gatillo del controlador → clic por raycasting sobre los botones 3D
     session.addEventListener("select", e => {
@@ -3059,6 +3081,7 @@ const XRView = (() => {
   function openScreenPreview() {
     if (!initGL()) { log("WebGL no está disponible en este navegador.", "bad"); return; }
     mode = "screen";
+    if (typeof onVREnter === "function") onVREnter();
     const overlay = $("xr-overlay"), canvas = $("xr-canvas");
     overlay.hidden = false;
     const fit = () => { canvas.width = Math.max(320, canvas.clientWidth * devicePixelRatio); canvas.height = Math.max(240, canvas.clientHeight * devicePixelRatio); };
@@ -3248,6 +3271,17 @@ function vrFinalize() {
     title: `${p.name}, ${p.age} años`,
     detail: `${LEVELS[truth].name} · ${reasonsTxt}`
   };
+}
+
+/** Al entrar en VR/MR se activa por defecto el modo «Jugador como Paciente»:
+    el usuario es el paciente de la unidad de triaje y el flujo guiado es
+    Escanear → responder la secuencia de preguntas → veredicto con LEDs. */
+function onVREnter() {
+  if (S.phase === "selfscan" || S.phase === "selfask") return; // ya está en el flujo
+  log("🥽 VR · Modo «Jugador como Paciente» activado por defecto: tú eres el paciente. Pulsa 🌡️ ESCANEAR o di «escanear».", "sys");
+  startSelfCheck();
+  Device.say("Modo paciente activado",
+    "Eres el paciente de la unidad de triaje. Pulsa el botón Escanear, o di escanear, para medir tu temperatura. Después responderás tres preguntas.", {});
 }
 
 /* 🎙️ Reconocimiento de voz CONTINUO mientras el modo VR/MR está activo.
