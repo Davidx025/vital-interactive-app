@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V.I.T.A.L — Simulador MR de Triaje Interactivo</title>
+<meta name="description" content="Juego interactivo de realidad mixta (merged reality) basado en el dispositivo de monitoreo de salud V.I.T.A.L: sensor infrarrojo, micrófono MEMS, altavoz, pantalla OLED y LEDs de estado.">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>">
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">V<span>.</span>I<span>.</span>T<span>.</span>A<span>.</span>L</div>
+    <div class="brand-sub">Valoración Inteligente de Triaje Asistida · Simulador MR</div>
+  </div>
+  <nav class="mode-tabs" role="tablist" aria-label="Modos de juego">
+    <button class="tab active" id="tab-mission" data-mode="mission" role="tab">🎯 Misión Triaje</button>
+    <button class="tab" id="tab-lab" data-mode="lab" role="tab">🧪 Laboratorio Libre</button>
+  </nav>
+  <div class="top-actions">
+    <button class="chip-btn" id="btn-camera" title="Activar cámara para realidad mixta (merged reality)">📷 Cámara MR</button>
+    <button class="chip-btn" id="btn-sound" title="Activar / silenciar voz y sonidos">🔊 Sonido</button>
+    <button class="chip-btn" id="btn-labels" title="Mostrar etiquetas del dispositivo">🏷️ Etiquetas</button>
+    <button class="chip-btn" id="btn-help" title="Ayuda e instrucciones">❓ Ayuda</button>
+  </div>
+</header>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="layout">
+
+  <!-- ───── ESCENA MR ───── -->
+  <section class="panel scene-panel">
+    <div class="panel-head">
+      <h2>🌐 Entorno Mixto <span class="live-dot" title="En directo"></span></h2>
+      <div class="scene-tools">
+        <button class="mini-btn" id="btn-thermal" title="Vista térmica simulada del sensor IR">🌡️ Vista térmica</button>
+        <span class="scene-mode" id="scene-mode-label">Sala virtual</span>
+      </div>
+    </div>
+
+    <div class="scene" id="scene">
+      <!-- Fondo virtual -->
+      <div class="room-bg">
+        <div class="room-grid"></div>
+        <div class="room-window"></div>
+        <div class="room-cross">✚</div>
+      </div>
+      <!-- Cámara real (merged reality) -->
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="motion-canvas" width="96" height="72" hidden></canvas>
+
+      <!-- Guía facial MR -->
+      <div class="face-guide" id="face-guide" hidden>
+        <div class="face-oval"></div>
+        <div class="face-label">Coloca tu rostro aquí · El sensor IR medirá tu frente</div>
+        <div class="gesture-zone zone-no">✋ NO</div>
+        <div class="gesture-zone zone-yes">SÍ ✋</div>
+      </div>
+
+      <!-- Paciente virtual -->
+      <div class="patient-wrap" id="patient-wrap" hidden>
+        <div class="patient-holo" id="patient-holo">
+          <span class="holo-chip" id="holo-name">—</span>
+          <span class="holo-chip" id="holo-temp">🌡️ Sin medir</span>
+          <span class="holo-chip" id="holo-answers">💬 0 respuestas</span>
+        </div>
+        <div class="patient-avatar" id="patient-avatar"></div>
+        <div class="patient-bubble" id="patient-bubble" hidden></div>
+        <div class="forehead-target" id="forehead-target" title="Zona de medición IR"></div>
+      </div>
+
+      <!-- Ambiente / partículas -->
+      <div class="heat-haze" id="heat-haze"></div>
+      <div class="noise-viz" id="noise-viz" hidden>🔊 Ambiente ruidoso: las respuestas pueden no escucharse bien</div>
+
+      <!-- Retícula de escaneo -->
+      <div class="reticle" id="reticle" hidden>
+        <div class="reticle-ring"></div>
+        <div class="reticle-progress" id="reticle-progress"></div>
+        <div class="reticle-label">ESCANEANDO… mantén el sensor sobre la frente</div>
+      </div>
+      <div class="scan-beam" id="scan-beam" hidden></div>
+
+      <!-- Banner de eventos -->
+      <div class="event-banner" id="event-banner" hidden></div>
+
+      <!-- Puntos flotantes -->
+      <div class="float-layer" id="float-layer"></div>
+
+      <!-- Mensaje central de escena -->
+      <div class="scene-empty" id="scene-empty">
+        <div class="scene-empty-icon">🩺</div>
+        <p><strong>Bienvenido a la unidad V.I.T.A.L</strong></p>
+        <p>En <b>Misión Triaje</b> atiende pacientes virtuales: escanea su temperatura con el sensor infrarrojo, entrevístalos por voz y clasifícalos con los LED.</p>
+        <p>Activa la <b>📷 Cámara MR</b> para fusionar el dispositivo con tu entorno real y convertirte en el paciente.</p>
+        <button class="cta-btn" id="btn-start-mission">▶ Comenzar misión</button>
+      </div>
+    </div>
+
+    <div class="scene-footer">
+      <div class="env-readout">
+        <span>🌡️ Ambiente: <b id="env-temp-read">22.0 °C</b></span>
+        <span>🔊 Ruido: <b id="env-noise-read">20 %</b></span>
+        <span>📐 Deriva del sensor: <b id="env-drift-read">+0.0 °C</b></span>
+      </div>
+      <div class="gesture-hint" id="gesture-hint">Gestos: mantén pulsado sobre la frente para escanear · desliza ← / → en la pantalla OLED para responder No / Sí</div>
+    </div>
+  </section>
+
+  <!-- ───── DISPOSITIVO V.I.T.A.L ───── -->
+  <section class="panel device-panel">
+    <div class="panel-head">
+      <h2>📟 Dispositivo V.I.T.A.L</h2>
+      <span class="device-status" id="device-status">● En espera</span>
+    </div>
+
+    <div class="device-stage" id="device-stage">
+      <!-- Etiquetas tipo plano técnico -->
+      <div class="anno anno-ir">Sensor Temperatura Infrarrojo <i></i></div>
+      <div class="anno anno-oled"><i></i> Pantalla OLED</div>
+      <div class="anno anno-led-g"><i></i> <b class="g">LED Verde - Estable</b></div>
+      <div class="anno anno-led-y"><i></i> <b class="y">LED Amarillo - Revisión</b></div>
+      <div class="anno anno-led-r"><i></i> <b class="r">LED Rojo - Alerta</b></div>
+      <div class="anno anno-spk">Altavoz <i></i></div>
+      <div class="anno anno-mic"><i></i> Micrófono MEMS</div>
+
+      <div class="device" id="device">
+        <!-- Sensor IR -->
+        <button class="ir-sensor hotspot" id="ir-sensor" title="Sensor de temperatura infrarrojo: clic para escanear" aria-label="Sensor infrarrojo">
+          <span class="ir-lens"></span>
+          <span class="ir-ring"></span>
+        </button>
+
+        <!-- Pantalla OLED -->
+        <div class="oled hotspot" id="oled" title="Pantalla OLED: desliza ← No · → Sí" aria-label="Pantalla OLED">
+          <div class="oled-content">
+            <div class="oled-top" id="oled-top">V.I.T.A.L OS</div>
+            <div class="oled-main" id="oled-main">Sistema listo</div>
+            <div class="oled-sub" id="oled-sub">Seleccione un modo para comenzar</div>
+            <canvas id="oled-wave" width="260" height="52"></canvas>
+            <div class="oled-bottom"><span id="oled-batt">🔋 100%</span><span id="oled-clock">--:--</span></div>
+          </div>
+          <div class="oled-scanlines"></div>
+        </div>
+
+        <!-- Columna LED -->
+        <div class="led-rail">
+          <button class="led led-green" id="led-green" data-triage="green" title="LED Verde · Estable" aria-label="LED verde estable"></button>
+          <span class="led-dot"></span>
+          <button class="led led-yellow" id="led-yellow" data-triage="yellow" title="LED Amarillo · Revisión" aria-label="LED amarillo revisión"></button>
+          <span class="led-dot"></span>
+          <button class="led led-red" id="led-red" data-triage="red" title="LED Rojo · Alerta" aria-label="LED rojo alerta"></button>
+        </div>
+
+        <!-- Panel inferior -->
+        <div class="device-bottom">
+          <button class="speaker hotspot" id="speaker" title="Altavoz: repetir último mensaje por voz" aria-label="Altavoz">
+            <span class="grille"></span>
+          </button>
+          <button class="mic hotspot" id="mic" title="Micrófono MEMS: responder por voz (Sí / No)" aria-label="Micrófono MEMS">
+            <span class="grille"></span>
+            <span class="mic-wave"></span>
+          </button>
+          <div class="brand-emboss">V.I.T.A.L</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones del dispositivo -->
+    <div class="device-actions">
+      <button class="act-btn" id="btn-scan">🎯 Escanear temperatura</button>
+      <button class="act-btn" id="btn-calibrate">🧭 Calibrar sensor</button>
+      <button class="act-btn" id="btn-listen">🎙️ Responder por voz</button>
+    </div>
+    <div class="device-meters">
+      <label>Batería <span class="meter"><i id="battery-bar" style="width:100%"></i></span></label>
+      <label>Precisión <span class="meter"><i id="precision-bar" style="width:100%"></i></span></label>
+    </div>
+  </section>
+
+  <!-- ───── PANEL DE CONTROL ───── -->
+  <aside class="panel control-panel">
+
+    <!-- HUD misión -->
+    <div class="hud" id="hud">
+      <div class="hud-row">
+        <div class="hud-box"><span class="hud-label">Puntuación</span><b id="score">0</b></div>
+        <div class="hud-box"><span class="hud-label">Racha</span><b id="streak">×0</b></div>
+        <div class="hud-box"><span class="hud-label">Paciente</span><b id="patient-count">–/8</b></div>
+        <div class="hud-box"><span class="hud-label">Nivel</span><b id="level">1</b></div>
+      </div>
+      <div class="timer-wrap"><span>⏱️ Tiempo del paciente</span><div class="timer-bar"><i id="timer-bar"></i></div></div>
+      <div class="mission-state" id="mission-state">Pulsa «Comenzar misión» para recibir pacientes.</div>
+    </div>
+
+    <!-- Entrevista -->
+    <div class="control-block" id="interview-block">
+      <h3>💬 Entrevista clínica <small>(elige hasta 3 preguntas)</small></h3>
+      <div class="question-chips" id="question-chips"></div>
+      <div class="answer-row" id="answer-row" hidden>
+        <span>Tu respuesta:</span>
+        <button class="ans-btn yes" id="btn-yes">👍 SÍ</button>
+        <button class="ans-btn no" id="btn-no">👎 NO</button>
+      </div>
+    </div>
+
+    <!-- Decisión de triaje -->
+    <div class="control-block" id="triage-block">
+      <h3>🚦 Decisión de triaje</h3>
+      <div class="triage-btns">
+        <button class="triage-btn green" data-triage="green">🟢 Estable<small>Alta / observación leve</small></button>
+        <button class="triage-btn yellow" data-triage="yellow">🟡 Revisión<small>Valoración médica</small></button>
+        <button class="triage-btn red" data-triage="red">🔴 Alerta<small>Atención urgente</small></button>
+      </div>
+      <p class="triage-hint">También puedes pulsar directamente los LED del dispositivo.</p>
+    </div>
+
+    <!-- Laboratorio -->
+    <div class="control-block" id="lab-block" hidden>
+      <h3>🧪 Paciente virtual de laboratorio</h3>
+      <label class="lab-row">Temperatura real <b id="lab-temp-val">36.8 °C</b>
+        <input type="range" id="lab-temp" min="35" max="41" step="0.1" value="36.8">
+      </label>
+      <div class="lab-symptoms" id="lab-symptoms"></div>
+      <button class="act-btn wide" id="btn-lab-new">🔀 Generar paciente aleatorio</button>
+      <button class="act-btn wide accent" id="btn-selfcheck">🪞 Autoevaluación MR (con cámara)</button>
+      <p class="triage-hint">En el laboratorio observas cómo el dispositivo reacciona ante las condiciones que tú defines, sin presión de tiempo.</p>
+    </div>
+
+    <!-- Entorno virtual -->
+    <div class="control-block" id="env-block">
+      <h3>🌍 Condiciones del entorno</h3>
+      <label class="lab-row">Temperatura ambiente <b id="env-temp-val">22 °C</b>
+        <input type="range" id="env-temp" min="10" max="42" step="1" value="22">
+      </label>
+      <label class="lab-row">Ruido ambiental <b id="env-noise-val">20 %</b>
+        <input type="range" id="env-noise" min="0" max="100" step="5" value="20">
+      </label>
+      <div class="env-btns">
+        <button class="mini-btn" data-env-event="heat">🥵 Ola de calor</button>
+        <button class="mini-btn" data-env-event="noise">📢 Sala ruidosa</button>
+        <button class="mini-btn" data-env-event="drift">🧲 Interferencia</button>
+        <button class="mini-btn" data-env-event="calm">🌙 Normalizar</button>
+      </div>
+      <p class="triage-hint">El entorno afecta a las mediciones: el calor eleva la deriva del sensor IR y el ruido dificulta la entrevista por el micrófono MEMS.</p>
+    </div>
+
+    <!-- Registro -->
+    <div class="control-block log-block">
+      <h3>📋 Registro del sistema</h3>
+      <div class="log" id="log" aria-live="polite"></div>
+    </div>
+  </aside>
+</main>
+
+<!-- ══════════ MODAL AYUDA ══════════ -->
+<div class="modal" id="help-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="btn-close-help">✕</button>
+    <h2>Cómo jugar · Unidad V.I.T.A.L</h2>
+    <img class="help-img" src="assets/vital-reference.jpg" alt="Plano del dispositivo V.I.T.A.L con sus componentes etiquetados">
+    <div class="help-grid">
+      <div><h4>🎯 Sensor infrarrojo</h4><p>Pulsa <b>Escanear</b> y mantén la retícula sobre la frente del paciente (o sobre tu frente con la cámara MR) hasta completar la medición. El calor ambiental y la deriva afectan la lectura: calibra el sensor cuando la precisión baje.</p></div>
+      <div><h4>🎙️ Micrófono MEMS</h4><p>Elige preguntas de la entrevista y el paciente responderá por el altavoz. Cuando el dispositivo te pregunte <b>a ti</b>, responde con tu voz («sí» / «no»), con los botones 👍/👎, deslizando en la pantalla OLED, o con gestos de mano frente a la cámara (derecha = SÍ, izquierda = NO).</p></div>
+      <div><h4>💡 LEDs de estado</h4><p>🟢 Estable · 🟡 Revisión · 🔴 Alerta. Al decidir el triaje pulsa el LED del dispositivo o los botones de decisión. Acertar suma puntos y racha; clasificar una alerta como estable tiene penalización grave.</p></div>
+      <div><h4>🔊 Altavoz y pantalla OLED</h4><p>El altavoz anuncia preguntas, resultados y eventos del entorno (pulsa el altavoz para repetir el último mensaje). La OLED muestra la pregunta actual, la temperatura medida y la forma de onda del audio en tiempo real.</p></div>
+      <div><h4>📷 Realidad mixta (MR)</h4><p>Con la <b>Cámara MR</b> tu entorno real se fusiona con el dispositivo virtual: hazte una autoevaluación, deja que el sensor mida tu frente y responde a la entrevista con voz o gestos. La vista térmica simula la imagen del sensor IR.</p></div>
+      <div><h4>🌍 Entorno dinámico</h4><p>Olas de calor, salas ruidosas e interferencias ocurren al azar durante la misión y alteran el comportamiento del dispositivo en tiempo real. Adáptate: recalibrar y repetir preguntas es parte del trabajo.</p></div>
+    </div>
+    <p class="help-note">⚠️ Simulación educativa. No es un dispositivo médico real ni sustituye valoración profesional.</p>
+  </div>
+</div>
+
+<!-- ══════════ MODAL FIN DE MISIÓN ══════════ -->
+<div class="modal" id="end-modal" hidden>
+  <div class="modal-card small">
+    <button class="modal-close" id="btn-close-end">✕</button>
+    <h2>🏁 Fin de la misión</h2>
+    <div class="end-stats">
+      <p>Puntuación final: <b id="end-score">0</b></p>
+      <p>Pacientes correctos: <b id="end-correct">0/8</b></p>
+      <p>Mejor racha: <b id="end-streak">×0</b></p>
+      <p class="end-rank" id="end-rank">—</p>
+    </div>
+    <button class="cta-btn" id="btn-restart">↻ Jugar de nuevo</button>
+  </div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/device.js"></script>
+<script src="js/patients.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
