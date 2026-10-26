@@ -61,7 +61,7 @@ small{color:var(--ink-faint);font-weight:400}
 /* ───── Layout ───── */
 .layout{
   display:grid;gap:1rem;padding:1rem;
-  grid-template-columns:minmax(400px,1.35fr) calc(var(--dev-w) + 130px) 350px;
+  grid-template-columns:minmax(360px,1.35fr) calc(var(--dev-w) + 300px) 350px;
   align-items:start;max-width:1900px;margin-inline:auto;
 }
 .panel{
@@ -78,6 +78,27 @@ small{color:var(--ink-faint);font-weight:400}
 .mini-btn:hover{border-color:var(--cyan);color:#fff}
 .mini-btn.on{background:#134e4a;color:#5eead4;border-color:#2dd4bf}
 .scene-mode{font-size:.75rem;color:var(--ink-faint)}
+/* Selector de entorno virtual */
+.env-switch{display:flex;gap:.45rem;margin-bottom:.6rem;flex-wrap:wrap}
+.env-switch button{
+  flex:1;min-width:150px;background:#0d1a2e;border:1.5px solid #274a75;color:var(--ink-dim);
+  border-radius:12px;padding:.5rem .6rem;font-size:.86rem;font-weight:700;transition:.18s;line-height:1.25;
+}
+.env-switch button small{display:block;font-size:.66rem;font-weight:500;color:var(--ink-faint);letter-spacing:.05em;text-transform:uppercase}
+.env-switch button:hover{border-color:var(--cyan);color:#fff}
+.env-switch button.on{background:linear-gradient(135deg,#0e7490,#155e75);border-color:var(--cyan);color:#fff;box-shadow:0 0 14px rgba(34,211,238,.35)}
+.env-switch button.on small{color:#a5f3fc}
+/* Fondos de entorno renderizados (hospital / carpa) */
+.env-bg{position:absolute;inset:0;z-index:0}
+.env-bg svg{width:100%;height:100%;display:block}
+.scene.thermal .env-bg svg{filter:hue-rotate(185deg) saturate(3.1) contrast(1.22) brightness(1.05)}
+/* Overlay de vista previa VR/MR en pantalla (respaldo WebXR) */
+.xr-overlay{position:fixed;inset:0;z-index:120;background:#000;display:flex;flex-direction:column}
+.xr-overlay[hidden]{display:none}
+.xr-overlay canvas{flex:1;width:100%;min-height:0;display:block;touch-action:none;cursor:grab}
+.xr-overlay canvas:active{cursor:grabbing}
+.xr-bar{display:flex;gap:.6rem;align-items:center;justify-content:space-between;background:rgba(7,13,24,.92);border-top:1px solid #274a75;padding:.55rem .8rem;color:var(--ink-dim);font-size:.82rem;flex-wrap:wrap}
+.xr-bar b{color:#e0f2fe}
 .scene-tools{display:flex;gap:.5rem;align-items:center}
 
 /* ───── Escena MR ───── */
@@ -266,7 +287,8 @@ small{color:var(--ink-faint);font-weight:400}
 .device-panel{display:flex;flex-direction:column}
 .device-status{font-size:.75rem;color:#5eead4}
 .device-status.busy{color:#fde68a}.device-status.alert{color:#fca5a5}
-.device-stage{position:relative;padding:2.6rem 2.2rem 1.4rem;display:flex;justify-content:center;perspective:900px}
+.device-stage{position:relative;padding:4rem .5rem 1.5rem;display:flex;justify-content:center;perspective:900px}
+.device-wrap{position:relative;width:var(--dev-w);flex:none;margin-inline:auto}
 .device{
   --tiltX:0deg;--tiltY:0deg;
   position:relative;width:var(--dev-w);aspect-ratio:320/430;flex:none;
@@ -368,24 +390,43 @@ small{color:var(--ink-faint);font-weight:400}
   text-shadow:0 1px 0 rgba(255,255,255,.75),0 -1px 1px rgba(70,78,92,.5);user-select:none;
 }
 
-/* Anotaciones tipo plano */
+/* Anotaciones tipo plano: etiquetas fuera del cuerpo, con línea guía y flecha
+   que termina exactamente en el borde/centro de cada componente.
+   Coordenadas calculadas sobre la caja del dispositivo (320×430):
+   IR (50%, 10%) · OLED (borde izq. 7.5%, centro 39.7%) · LEDs (desde la
+   derecha 11.7%; centros 25.7% / 39% / 52.3%) · Altavoz (borde izq. 14%,
+   centro 81.3%) · Micrófono (borde der. 14%, centro 84.5%). */
 .anno{
-  position:absolute;font-size:.8rem;font-weight:600;color:#cbd5e1;white-space:nowrap;z-index:4;
-  display:flex;align-items:center;gap:.45rem;transition:opacity .3s;
+  position:absolute;z-index:6;display:flex;align-items:center;pointer-events:none;
+  font-size:.76rem;font-weight:600;color:#dbe7f5;white-space:nowrap;transition:opacity .3s;
 }
-.anno i{display:block;height:1px;width:52px;background:linear-gradient(90deg,#64748b,#64748b);position:relative;flex:none}
-.anno i::after{content:"";position:absolute;top:-2.5px;width:6px;height:6px;border-top:1.5px solid #64748b;border-right:1.5px solid #64748b;transform:rotate(45deg)}
+.anno span{
+  background:rgba(3,10,20,.8);border:1px solid rgba(100,116,139,.45);border-radius:7px;
+  padding:.22rem .5rem;backdrop-filter:blur(3px);box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
 .anno b{font-weight:700}.anno b.g{color:#4ade80}.anno b.y{color:#facc15}.anno b.r{color:#f87171}
-.device-stage.no-labels .anno{opacity:0;pointer-events:none}
-.anno-ir{top:.4rem;left:50%;transform:translateX(-8%);flex-direction:row}
-.anno-ir i{width:1px;height:40px;background:#64748b;order:-1;margin-right:.2rem;transform:rotate(0)}
-.anno-ir i::after{top:auto;bottom:-1px;left:-2.5px;transform:rotate(135deg)}
-.anno-oled{left:-.4rem;top:34%}.anno-oled i::after{right:-1px}
-.anno-led-g{right:-.6rem;top:25%}.anno-led-g i{order:-1}.anno-led-g i::after{left:-1px;transform:rotate(-135deg)}
-.anno-led-y{right:-.6rem;top:37%}.anno-led-y i{order:-1}.anno-led-y i::after{left:-1px;transform:rotate(-135deg)}
-.anno-led-r{right:-.6rem;top:49%}.anno-led-r i{order:-1}.anno-led-r i::after{left:-1px;transform:rotate(-135deg)}
-.anno-spk{left:-.4rem;bottom:16%}.anno-spk i::after{right:-1px}
-.anno-mic{right:-.6rem;bottom:16%}.anno-mic i{order:-1}.anno-mic i::after{left:-1px;transform:rotate(-135deg)}
+.anno i{display:block;position:relative;flex:none;background:#93a9c4;box-shadow:0 0 5px rgba(0,0,0,.4)}
+.anno i::after{content:"";position:absolute;width:6px;height:6px;border-top:1.6px solid #93a9c4;border-right:1.6px solid #93a9c4}
+.device-stage.no-labels .anno{opacity:0}
+/* Sensor IR: etiqueta sobre el dispositivo, línea vertical descendente */
+.anno-ir{left:50%;bottom:calc(100% + 3px);transform:translateX(-50%);flex-direction:column}
+.anno-ir i{width:1.6px;height:30px;margin-top:3px}
+.anno-ir i::after{bottom:-1px;left:-2.7px;transform:rotate(135deg)}
+/* OLED y Altavoz: etiqueta a la izquierda, flecha → hacia el componente */
+.anno-oled{right:calc(100% + 2px);top:39.7%;transform:translateY(-50%)}
+.anno-oled i{width:34px;height:1.6px}
+.anno-oled i::after{right:-1px;top:-2.7px;transform:rotate(45deg)}
+.anno-spk{right:calc(100% + 2px);top:81.3%;transform:translateY(-50%)}
+.anno-spk i{width:46px;height:1.6px}
+.anno-spk i::after{right:-1px;top:-2.7px;transform:rotate(45deg)}
+/* LEDs y Micrófono: etiqueta a la derecha, flecha ← hacia el componente */
+.anno-led-g{left:calc(100% + 2px);top:25.7%;transform:translateY(-50%)}
+.anno-led-y{left:calc(100% + 2px);top:39%;transform:translateY(-50%)}
+.anno-led-r{left:calc(100% + 2px);top:52.3%;transform:translateY(-50%)}
+.anno-led-g i,.anno-led-y i,.anno-led-r i{width:40px;height:1.6px}
+.anno-mic{left:calc(100% + 2px);top:84.5%;transform:translateY(-50%)}
+.anno-mic i{width:46px;height:1.6px}
+.anno-led-g i::after,.anno-led-y i::after,.anno-led-r i::after,.anno-mic i::after{left:-1px;top:-2.7px;transform:rotate(-135deg)}
 
 .device-actions{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem}
 .act-btn{
@@ -475,9 +516,13 @@ small{color:var(--ink-faint);font-weight:400}
 .end-rank{font-size:1.2rem!important;font-weight:800;color:#facc15!important;margin-top:.8rem!important}
 
 /* ───── Responsive ───── */
-@media (max-width:1280px){
+@media (max-width:1400px){
   .layout{grid-template-columns:1fr 1fr}
   .control-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+}
+/* Sin espacio lateral suficiente, las etiquetas del plano se ocultan para no solaparse */
+@media (max-width:1180px){
+  .anno{display:none}
 }
 @media (max-width:820px){
   .layout{grid-template-columns:1fr}
@@ -506,6 +551,7 @@ small{color:var(--ink-faint);font-weight:400}
   </nav>
   <div class="top-actions">
     <button class="chip-btn" id="btn-camera" title="Activar cámara para realidad mixta (merged reality)">📷 Cámara MR</button>
+    <button class="chip-btn" id="btn-xr" title="Proyectar la escena en gafas VR/MR con WebXR (o vista previa 3D en pantalla)">🥽 Entrar en VR/MR</button>
     <button class="chip-btn" id="btn-sound" title="Activar / silenciar voz y sonidos">🔊 Sonido</button>
     <button class="chip-btn" id="btn-labels" title="Mostrar etiquetas del dispositivo">🏷️ Etiquetas</button>
     <button class="chip-btn" id="btn-help" title="Ayuda e instrucciones">❓ Ayuda</button>
@@ -521,16 +567,141 @@ small{color:var(--ink-faint);font-weight:400}
       <h2>🌐 Entorno Mixto <span class="live-dot" title="En directo"></span></h2>
       <div class="scene-tools">
         <button class="mini-btn" id="btn-thermal" title="Vista térmica simulada del sensor IR">🌡️ Vista térmica</button>
-        <span class="scene-mode" id="scene-mode-label">Sala virtual</span>
+        <span class="scene-mode" id="scene-mode-label">🏥 Sala de hospital</span>
       </div>
     </div>
 
+    <!-- Selector de entorno virtual -->
+    <div class="env-switch" id="env-switch" role="group" aria-label="Selector de entorno">
+      <button data-envscene="camera" title="Vídeo de tu webcam en vivo con el dispositivo superpuesto">📷 Cámara Real <small>MR Passthrough</small></button>
+      <button data-envscene="hospital" class="on" title="Unidad hospitalaria renderizada">🏥 Sala de Hospital <small>entorno virtual</small></button>
+      <button data-envscene="tent" title="Carpa de emergencia sanitaria de campaña">⛺ Carpa Médica <small>triage de campaña</small></button>
+    </div>
+
     <div class="scene" id="scene">
-      <!-- Fondo virtual -->
-      <div class="room-bg">
+      <!-- Fondo genérico (solo visible en modo cámara, atenuado) -->
+      <div class="room-bg" id="room-bg">
         <div class="room-grid"></div>
         <div class="room-window"></div>
         <div class="room-cross">✚</div>
+      </div>
+
+      <!-- 🏥 Entorno virtual: Sala de Hospital -->
+      <div class="env-bg" id="env-hospital" aria-hidden="true">
+        <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="hWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3f0fa"/><stop offset="1" stop-color="#aecfe8"/></linearGradient>
+            <linearGradient id="hFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93aebf"/><stop offset="1" stop-color="#637d92"/></linearGradient>
+            <linearGradient id="hSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bae6fd"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient>
+          </defs>
+          <rect width="800" height="385" fill="url(#hWall)"/>
+          <rect y="385" width="800" height="135" fill="url(#hFloor)"/>
+          <rect y="298" width="800" height="9" fill="#2dd4bf" opacity=".55"/>
+          <rect y="330" width="800" height="5" fill="#7c93a6" opacity=".7"/>
+          <!-- ventana con persianas -->
+          <g>
+            <rect x="42" y="58" width="204" height="196" rx="8" fill="#f8fafc"/>
+            <rect x="52" y="68" width="184" height="176" fill="url(#hSky)"/>
+            <circle cx="110" cy="105" r="17" fill="#fde68a"/>
+            <path d="M52 210 Q120 178 168 202 T236 196 V244 H52 Z" fill="#a7c4a0"/>
+            <g stroke="rgba(255,255,255,.85)" stroke-width="5"><path d="M52 92 H236M52 118 H236M52 144 H236M52 170 H236M52 196 H236M52 222 H236"/></g>
+            <rect x="140" y="68" width="7" height="176" fill="#e2e8f0"/>
+          </g>
+          <!-- reloj y señalética -->
+          <g><circle cx="368" cy="66" r="17" fill="#fff" stroke="#64748b" stroke-width="2.5"/><path d="M368 66 L368 55 M368 66 L376 70" stroke="#334155" stroke-width="2.4" stroke-linecap="round"/></g>
+          <g><circle cx="618" cy="62" r="21" fill="#fff" stroke="#cbd5e1" stroke-width="2"/><path d="M618 50 v24 M606 62 h24" stroke="#dc2626" stroke-width="6"/></g>
+          <g><rect x="700" y="52" width="66" height="30" rx="5" fill="#0369a1"/><text x="733" y="72" font-family="sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">TRIAJE</text></g>
+          <!-- monitor de signos vitales -->
+          <g>
+            <rect x="468" y="66" width="176" height="112" rx="10" fill="#0b1526" stroke="#334155" stroke-width="3"/>
+            <rect x="478" y="76" width="156" height="72" rx="5" fill="#04150c"/>
+            <polyline class="ecg" points="482,112 505,112 513,96 522,126 530,112 552,112 560,100 568,122 576,112 630,112" fill="none" stroke="#4ade80" stroke-width="2.6"/>
+            <text x="486" y="138" font-family="monospace" font-size="15" fill="#4ade80">FC 72</text>
+            <text x="548" y="138" font-family="monospace" font-size="15" fill="#7dd3fc">SpO₂ 98</text>
+            <rect x="540" y="178" width="10" height="26" fill="#475569"/><rect x="516" y="202" width="58" height="7" rx="3" fill="#475569"/>
+          </g>
+          <!-- puerta -->
+          <g><rect x="676" y="120" width="104" height="265" rx="6" fill="#dbe7f0" stroke="#9db4c8" stroke-width="3"/><rect x="692" y="140" width="72" height="90" rx="4" fill="#b9d2e4"/><circle cx="694" cy="262" r="5" fill="#64748b"/><rect x="676" y="330" width="104" height="8" fill="#9db4c8"/></g>
+          <!-- panel de cabecera con tomas -->
+          <g><rect x="238" y="212" width="330" height="86" rx="10" fill="#eef6fb" stroke="#b6cddd" stroke-width="2"/>
+            <circle cx="272" cy="240" r="9" fill="#facc15"/><circle cx="302" cy="240" r="9" fill="#38bdf8"/><circle cx="332" cy="240" r="9" fill="#4ade80"/>
+            <rect x="262" y="262" width="70" height="16" rx="4" fill="#d7e6f0"/><rect x="470" y="238" width="76" height="30" rx="5" fill="#0ea5e9" opacity=".28"/>
+            <text x="508" y="258" font-family="sans-serif" font-size="11" fill="#0369a1" text-anchor="middle">O₂ · VAC</text></g>
+          <!-- cama hospitalaria -->
+          <g>
+            <rect x="252" y="300" width="14" height="58" rx="4" fill="#94a3b8"/>
+            <rect x="540" y="300" width="14" height="58" rx="4" fill="#94a3b8"/>
+            <rect x="246" y="318" width="314" height="20" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+            <path d="M246 332 h314 v22 a8 8 0 0 1 -8 8 h-298 a8 8 0 0 1 -8 -8 Z" fill="#14b8a6"/>
+            <rect x="262" y="306" width="66" height="16" rx="7" fill="#ffffff" stroke="#cbd5e1"/>
+            <rect x="252" y="362" width="302" height="10" rx="4" fill="#64748b"/>
+            <path d="M268 372 v34 M538 372 v34" stroke="#64748b" stroke-width="6"/>
+            <circle cx="268" cy="412" r="8" fill="#334155"/><circle cx="538" cy="412" r="8" fill="#334155"/>
+          </g>
+          <!-- portasueros -->
+          <g><path d="M592 128 V336" stroke="#7d8ea0" stroke-width="5"/><path d="M572 128 h40" stroke="#7d8ea0" stroke-width="4"/>
+            <rect x="560" y="132" width="24" height="40" rx="7" fill="#bae6fd" stroke="#7dd3fc" stroke-width="2"/>
+            <path d="M572 172 q-6 60 -34 108" stroke="#7dd3fc" stroke-width="2.4" fill="none"/>
+            <path d="M578 336 h26 M591 336 v14" stroke="#7d8ea0" stroke-width="4"/></g>
+          <!-- armario / material -->
+          <g><rect x="26" y="336" width="128" height="96" rx="8" fill="#e8f1f7" stroke="#b6cddd" stroke-width="2"/><path d="M90 336 v96 M26 384 h128" stroke="#b6cddd" stroke-width="2"/><circle cx="80" cy="360" r="3.4" fill="#64748b"/><circle cx="100" cy="360" r="3.4" fill="#64748b"/></g>
+          <style>.ecg{stroke-dasharray:260;stroke-dashoffset:260;animation:ecgmove 3.2s linear infinite}@keyframes ecgmove{to{stroke-dashoffset:-260}}</style>
+        </svg>
+      </div>
+
+      <!-- ⛺ Entorno virtual: Carpa de Atención Médica (triage de campaña) -->
+      <div class="env-bg" id="env-tent" hidden aria-hidden="true">
+        <svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="tCeil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdbb8a"/><stop offset="1" stop-color="#b3a06e"/></linearGradient>
+            <linearGradient id="tGround" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8ad7a"/><stop offset="1" stop-color="#a2824f"/></linearGradient>
+          </defs>
+          <rect width="800" height="520" fill="#b3a06e"/>
+          <!-- estructura interior de la carpa (perspectiva) -->
+          <polygon points="0,0 800,0 552,118 248,118" fill="url(#tCeil)"/>
+          <polygon points="0,0 248,118 248,342 0,520" fill="#a8905a"/>
+          <polygon points="800,0 552,118 552,342 800,520" fill="#9a814f"/>
+          <rect x="248" y="118" width="304" height="224" fill="#8a7444"/>
+          <polygon points="0,520 248,342 552,342 800,520" fill="url(#tGround)"/>
+          <g stroke="rgba(74,56,24,.4)" stroke-width="2.4">
+            <path d="M0 0 L248 118 M800 0 L552 118 M0 520 L248 342 M800 520 L552 342"/>
+            <path d="M400 0 L400 118 M248 230 H120 M552 230 H680" stroke-dasharray="7 6"/>
+          </g>
+          <rect x="248" y="118" width="304" height="224" fill="none" stroke="rgba(74,56,24,.45)" stroke-width="3"/>
+          <!-- banderín cruz roja -->
+          <g><path d="M292 128 V206" stroke="#6b5322" stroke-width="4"/>
+            <rect x="292" y="130" width="52" height="34" fill="#fff"/>
+            <path d="M318 137 v20 M308 147 h20" stroke="#dc2626" stroke-width="5"/></g>
+          <!-- lámpara colgante -->
+          <g><path d="M400 118 V168" stroke="#5d4a20" stroke-width="3"/>
+            <circle cx="400" cy="192" r="46" fill="#fde68a" opacity=".28"/><circle cx="400" cy="192" r="26" fill="#fef3c7" opacity=".4"/>
+            <path d="M382 168 h36 l8 18 h-52 Z" fill="#57534e"/><circle cx="400" cy="190" r="7" fill="#fef9c3"/></g>
+          <!-- camilla de campaña -->
+          <g>
+            <rect x="262" y="356" width="276" height="15" rx="6" fill="#707a4a"/>
+            <rect x="278" y="342" width="180" height="15" rx="6" fill="#f1f5f9"/>
+            <path d="M458 342 h64 a10 10 0 0 1 10 10 v5 h-74 Z" fill="#e7e5e4"/>
+            <path d="M318 326 v16 M310 334 h16" stroke="#dc2626" stroke-width="5"/>
+            <path d="M286 371 l26 44 M338 371 l-26 44 M462 371 l26 44 M514 371 l-26 44" stroke="#57534e" stroke-width="6"/>
+            <path d="M292 415 h216" stroke="#57534e" stroke-width="5"/>
+            <circle cx="300" cy="424" r="7" fill="#44403c"/><circle cx="500" cy="424" r="7" fill="#44403c"/>
+          </g>
+          <!-- cajas de suministros con cruz roja -->
+          <g>
+            <rect x="586" y="352" width="104" height="66" rx="5" fill="#7c6a3f" stroke="#5d4a20" stroke-width="2.4"/>
+            <rect x="600" y="308" width="76" height="48" rx="5" fill="#8a7444" stroke="#5d4a20" stroke-width="2.4"/>
+            <path d="M638 366 v26 M625 379 h26 M638 318 v22 M627 329 h22" stroke="#f8fafc" stroke-width="6"/>
+            <path d="M586 385 h104" stroke="#5d4a20" stroke-width="2.4"/>
+          </g>
+          <!-- bombona de oxígeno y mesa plegable -->
+          <g><rect x="176" y="330" width="28" height="86" rx="13" fill="#2f9e6e" stroke="#1f7a54" stroke-width="2"/><rect x="184" y="316" width="12" height="16" fill="#94a3b8"/><circle cx="190" cy="314" r="6" fill="#cbd5e1"/></g>
+          <g><rect x="66" y="332" width="104" height="9" rx="3" fill="#78716c"/>
+            <path d="M76 341 l18 40 M160 341 l-18 40 M82 361 h72" stroke="#57534e" stroke-width="4.4"/>
+            <rect x="84" y="312" width="13" height="20" rx="3" fill="#38bdf8"/><rect x="104" y="306" width="13" height="26" rx="3" fill="#f59e0b"/><rect x="126" y="316" width="22" height="16" rx="2" fill="#f8fafc" stroke="#a8a29e"/></g>
+          <!-- mochila médica en el suelo -->
+          <g><rect x="420" y="428" width="66" height="44" rx="9" fill="#b91c1c"/><path d="M438 428 a15 12 0 0 1 30 0" fill="none" stroke="#7f1d1d" stroke-width="5"/><path d="M453 438 v20 M443 448 h20" stroke="#fff" stroke-width="5"/></g>
+          <text x="400" y="512" font-family="sans-serif" font-size="13" letter-spacing="3" fill="rgba(60,44,14,.65)" text-anchor="middle">PUESTO DE TRIAJE · CAMPAÑA</text>
+        </svg>
       </div>
       <!-- Cámara real (merged reality) -->
       <video id="cam" autoplay playsinline muted></video>
@@ -619,15 +790,8 @@ small{color:var(--ink-faint);font-weight:400}
     </div>
 
     <div class="device-stage" id="device-stage">
-      <!-- Etiquetas tipo plano técnico -->
-      <div class="anno anno-ir">Sensor Temperatura Infrarrojo <i></i></div>
-      <div class="anno anno-oled"><i></i> Pantalla OLED</div>
-      <div class="anno anno-led-g"><i></i> <b class="g">LED Verde - Estable</b></div>
-      <div class="anno anno-led-y"><i></i> <b class="y">LED Amarillo - Revisión</b></div>
-      <div class="anno anno-led-r"><i></i> <b class="r">LED Rojo - Alerta</b></div>
-      <div class="anno anno-spk">Altavoz <i></i></div>
-      <div class="anno anno-mic"><i></i> Micrófono MEMS</div>
-
+     <div class="device-wrap">
+      <!-- Cuerpo del dispositivo -->
       <div class="device" id="device">
         <!-- Sensor IR -->
         <button class="ir-sensor hotspot" id="ir-sensor" title="Sensor de temperatura infrarrojo: clic para escanear" aria-label="Sensor infrarrojo">
@@ -668,6 +832,16 @@ small{color:var(--ink-faint);font-weight:400}
           <div class="brand-emboss">V.I.T.A.L</div>
         </div>
       </div>
+
+      <!-- Etiquetas tipo plano técnico: líneas guía alineadas al centro de cada componente -->
+      <div class="anno anno-ir"><span>Sensor Temperatura Infrarrojo</span><i></i></div>
+      <div class="anno anno-oled"><span>Pantalla OLED</span><i></i></div>
+      <div class="anno anno-led-g"><i></i><span><b class="g">LED Verde - Estable</b></span></div>
+      <div class="anno anno-led-y"><i></i><span><b class="y">LED Amarillo - Revisión</b></span></div>
+      <div class="anno anno-led-r"><i></i><span><b class="r">LED Rojo - Alerta</b></span></div>
+      <div class="anno anno-spk"><span>Altavoz</span><i></i></div>
+      <div class="anno anno-mic"><i></i><span>Micrófono MEMS</span></div>
+     </div>
     </div>
 
     <!-- Acciones del dispositivo -->
@@ -757,6 +931,15 @@ small{color:var(--ink-faint);font-weight:400}
   </aside>
 </main>
 
+<!-- ══════════ OVERLAY VR/MR (respaldo en pantalla de WebXR) ══════════ -->
+<div class="xr-overlay" id="xr-overlay" hidden>
+  <canvas id="xr-canvas" width="1280" height="720"></canvas>
+  <div class="xr-bar">
+    <span>🥽 <b>Vista previa VR/MR en pantalla</b> · Arrastra con el ratón o el dedo para mirar alrededor · El panel V.I.T.A.L flota frente a ti con tus datos en vivo</span>
+    <button class="mini-btn" id="btn-xr-exit">✕ Salir de VR/MR</button>
+  </div>
+</div>
+
 <!-- ══════════ MODAL AYUDA ══════════ -->
 <div class="modal" id="help-modal" hidden>
   <div class="modal-card">
@@ -770,6 +953,9 @@ small{color:var(--ink-faint);font-weight:400}
       <div><h4>🔊 Altavoz y pantalla OLED</h4><p>El altavoz anuncia preguntas, resultados y eventos del entorno (pulsa el altavoz para repetir el último mensaje). La OLED muestra la pregunta actual, la temperatura medida y la forma de onda del audio en tiempo real.</p></div>
       <div><h4>📷 Realidad mixta (MR)</h4><p>Con la <b>Cámara MR</b> tu entorno real se fusiona con el dispositivo virtual: hazte una autoevaluación, deja que el sensor mida tu frente y responde a la entrevista con voz o gestos. La vista térmica simula la imagen del sensor IR.</p></div>
       <div><h4>🌍 Entorno dinámico</h4><p>Olas de calor, salas ruidosas e interferencias ocurren al azar durante la misión y alteran el comportamiento del dispositivo en tiempo real. Adáptate: recalibrar y repetir preguntas es parte del trabajo.</p></div>
+      <div><h4>🏥 Entornos virtuales</h4><p>El selector sobre la escena cambia el fondo: <b>📷 Cámara Real</b> (tu webcam, MR passthrough), <b>🏥 Sala de Hospital</b> renderizada y <b>⛺ Carpa de Atención Médica</b> de campaña, donde el polvo y el calor añaden deriva al sensor IR.</p></div>
+      <div><h4>🥽 VR/MR (WebXR)</h4><p>El botón <b>Entrar en VR/MR</b> proyecta una escena 3D (entorno + panel V.I.T.A.L flotante con tus datos en vivo) en visores compatibles con la WebXR API. Sin visor, abre una vista previa 3D en pantalla: arrastra para mirar alrededor.</p></div>
+      <div><h4>🧑‍🤝‍🧑 Pacientes coherentes</h4><p>Cada avatar coincide estrictamente con su ficha (nombre, sexo y edad): niños, jóvenes, adultos y adultos mayores con canas, arrugas, barba o gafas según corresponda, y expresiones según su diagnóstico.</p></div>
     </div>
     <p class="help-note">⚠️ Simulación educativa. No es un dispositivo médico real ni sustituye valoración profesional.</p>
   </div>
@@ -1206,14 +1392,29 @@ function generatePatient(targetLevel, usedNames = new Set()) {
   usedNames.add(nameObj[0]);
 
   const p = {
-    name: nameObj[0], sex: nameObj[1], age: nameObj[2] + Math.round(rnd(-3, 3)),
+    name: nameObj[0], sex: nameObj[1],
+    // Los adultos mayores nunca "rejuvenecen" por debajo de 60 al aplicar variación
+    age: Math.max(5, nameObj[2] + (nameObj[2] >= 60 ? Math.round(rnd(0, 3)) : Math.round(rnd(-3, 3)))),
     symptoms: {}, measuredTemp: null, askedQuestions: [], answersCount: 0,
     skin: pick(SKINS), hair: pick(HAIRS), shirt: pick(SHIRTS),
-    hairStyle: pick(["short", "long", "bun", "bald", "curly"]),
-    glasses: chance(0.3), wobble: false,
+    wobble: false,
     voicePitch: nameObj[1] === "F" ? rnd(1.15, 1.35) : rnd(0.78, 0.95),
   };
   if (p.age < 14) p.voicePitch = rnd(1.35, 1.55);
+
+  /* ── Apariencia ESTRICTAMENTE sincronizada con sexo y rango de edad ──
+     El avatar nunca contradice la ficha: nada de mujeres con barba,
+     niños calvos ni ancianos con pelo juvenil oscuro. */
+  p.ageGroup = p.age < 14 ? "child" : p.age < 30 ? "young" : p.age < 60 ? "adult" : "senior";
+  const female = p.sex === "F";
+  if (p.ageGroup === "senior") p.hair = pick(["#e9e9e9", "#d3d3d3", "#bcbcbc", "#9a9a9a"]); // canas
+  else if (p.ageGroup === "child" || p.ageGroup === "young") p.hair = pick(["#2b2118", "#57412a", "#8a5a2b", "#151515", "#7a3b1e"]);
+  p.hairStyle = female
+    ? pick(p.ageGroup === "child" ? ["long", "curly", "bob"] : p.ageGroup === "senior" ? ["bun", "bob", "long"] : ["long", "bun", "bob", "curly"])
+    : pick(p.ageGroup === "child" ? ["short", "curly", "buzz"] : p.ageGroup === "senior" ? ["bald", "short", "buzz"] : ["short", "buzz", "curly", "short"]);
+  p.beard = !female && p.age >= 18 && chance(p.ageGroup === "senior" ? 0.55 : 0.35);
+  p.wrinkles = p.ageGroup === "senior" || (p.age >= 50 && chance(0.5));
+  p.glasses = chance(p.ageGroup === "senior" ? 0.55 : p.ageGroup === "adult" ? 0.3 : p.ageGroup === "young" ? 0.18 : 0.1);
   SYMPTOMS.forEach(s => p.symptoms[s.id] = false);
 
   const mild = ["cough", "soreThroat", "headache", "fatigue", "feverFeel"];
@@ -1261,33 +1462,53 @@ function patientAnswer(p, symId) {
 
 /* ── Avatar SVG generado ─────────────────────────────────── */
 function avatarSVG(p) {
+  const isChild = p.ageGroup === "child";
+  const isSenior = p.ageGroup === "senior";
   const long = p.hairStyle === "long" || p.hairStyle === "bun";
-  const hairBack = long ? `<path d="M60 78 Q48 20 100 16 Q152 20 140 78 L146 150 L54 150 Z" fill="${p.hair}"/>` : "";
+  const hairBack = long
+    ? `<path d="M60 78 Q48 20 100 16 Q152 20 140 78 L146 150 L54 150 Z" fill="${p.hair}"/>`
+    : p.hairStyle === "bob"
+      ? `<path d="M62 76 Q52 22 100 17 Q148 22 138 76 L143 118 L57 118 Z" fill="${p.hair}"/>` : "";
   const hairTop = p.hairStyle === "bald" ? "" :
     p.hairStyle === "curly"
       ? `<g fill="${p.hair}"><circle cx="72" cy="42" r="13"/><circle cx="92" cy="32" r="14"/><circle cx="112" cy="32" r="14"/><circle cx="128" cy="44" r="12"/><circle cx="100" cy="26" r="12"/></g>`
-      : `<path d="M62 62 Q58 18 100 16 Q142 18 138 62 Q126 34 100 34 Q74 34 62 62Z" fill="${p.hair}"/>`;
+      : p.hairStyle === "buzz"
+        ? `<path d="M65 57 Q63 25 100 23 Q137 25 135 57 Q123 37 100 37 Q77 37 65 57Z" fill="${p.hair}"/>`
+        : `<path d="M62 62 Q58 18 100 16 Q142 18 138 62 Q126 34 100 34 Q74 34 62 62Z" fill="${p.hair}"/>`;
   const bun = p.hairStyle === "bun" ? `<circle cx="100" cy="14" r="11" fill="${p.hair}"/>` : "";
+  // Barba y bigote: solo hombres adultos/mayores (el color sigue al pelo: canosa en mayores)
+  const beard = p.beard ? `
+    <path d="M76 80 Q78 112 100 115 Q122 112 124 80 Q114 95 100 95 Q86 95 76 80Z" fill="${p.hair}" opacity=".92"/>
+    <path d="M87 85 Q100 79 113 85 Q100 90 87 85Z" fill="${p.hair}"/>` : "";
+  // Arrugas: frente, patas de gallo y surcos nasolabiales en adultos mayores
+  const wrinkles = p.wrinkles ? `
+    <g stroke="rgba(96,64,42,.5)" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M79 43 Q100 38 121 43"/><path d="M83 50 Q100 46 117 50"/>
+      <path d="M71 65 l-6 2 M129 65 l6 2"/><path d="M88 83 Q86 89 89 93 M112 83 Q114 89 111 93"/>
+    </g>
+    <path d="M75 52 Q84 47 93 52 M107 52 Q116 47 125 52" stroke="${p.hair}" stroke-width="3.4" fill="none" stroke-linecap="round"/>` : "";
   const fever = p.realTemp >= 38;
+  const headRx = isChild ? 42 : 40, headRy = isChild ? 45 : 44, eyeR = isChild ? 5.4 : 4.4;
   return `
-  <svg viewBox="0 0 200 210" role="img" aria-label="Paciente ${p.name}">
+  <svg viewBox="0 0 200 210" role="img" aria-label="Paciente ${p.name}, ${p.age} años">
     ${hairBack}
     <!-- cuerpo -->
     <path d="M100 118 C60 118 44 148 40 205 L160 205 C156 148 140 118 100 118Z" fill="${p.shirt}"/>
     <path d="M88 120 L100 138 L112 120 L106 116 L100 124 L94 116Z" fill="rgba(255,255,255,.75)"/>
     <!-- cuello y cabeza -->
     <rect x="90" y="96" width="20" height="28" rx="7" fill="${p.skin}"/>
-    <ellipse cx="100" cy="66" rx="40" ry="44" fill="${p.skin}"/>
-    <circle cx="59" cy="68" r="7" fill="${p.skin}"/><circle cx="141" cy="68" r="7" fill="${p.skin}"/>
+    <ellipse cx="100" cy="66" rx="${headRx}" ry="${headRy}" fill="${p.skin}"/>
+    <circle cx="${100 - headRx - 1}" cy="68" r="7" fill="${p.skin}"/><circle cx="${100 + headRx + 1}" cy="68" r="7" fill="${p.skin}"/>
     ${bun}${hairTop}
     <!-- mejillas -->
-    <g class="cheeks" opacity="${fever ? 0.75 : 0.25}">
+    <g class="cheeks" opacity="${fever ? 0.75 : isChild ? 0.4 : 0.25}">
       <ellipse cx="76" cy="82" rx="9" ry="6" fill="#f87171"/>
       <ellipse cx="124" cy="82" rx="9" ry="6" fill="#f87171"/>
     </g>
+    ${beard}
     <!-- ojos según expresión -->
     <g class="eyes-ok">
-      <circle cx="84" cy="64" r="4.4" fill="#26221f"/><circle cx="116" cy="64" r="4.4" fill="#26221f"/>
+      <circle cx="84" cy="64" r="${eyeR}" fill="#26221f"/><circle cx="116" cy="64" r="${eyeR}" fill="#26221f"/>
       <path d="M76 54 Q84 49 92 54" stroke="#26221f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
       <path d="M108 54 Q116 49 124 54" stroke="#26221f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
     </g>
@@ -1297,6 +1518,7 @@ function avatarSVG(p) {
       <path d="M76 52 Q84 56 92 52" stroke="#26221f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
       <path d="M108 52 Q116 56 124 52" stroke="#26221f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
     </g>
+    ${wrinkles}
     <!-- nariz -->
     <path d="M100 66 L97 78 Q100 81 103 78" stroke="rgba(0,0,0,.35)" stroke-width="2" fill="none" stroke-linecap="round"/>
     <!-- bocas según expresión -->
@@ -1355,6 +1577,7 @@ const S = {
   awaitingAnswer: null,         // resolve fn cuando el dispositivo pregunta al usuario
   env: { temp: 22, noise: 20 },
   cameraOn: false, thermal: false,
+  envScene: "hospital", virtualEnv: "hospital", // entornos: camera | hospital | tent
   eventTimers: [],
   self: null,                   // datos de autoevaluación
   askedThisPatient: 0,
@@ -1496,7 +1719,7 @@ function hidePatient() {
 }
 function updateHolo() {
   const p = S.patient; if (!p) return;
-  $("holo-name").textContent = `👤 ${p.name} · ${p.age} años`;
+  $("holo-name").textContent = `👤 ${p.name} · ${p.sex === "F" ? "♀ Mujer" : "♂ Hombre"} · ${p.age} años`;
   $("holo-temp").textContent = p.measuredTemp !== null && p.measuredTemp !== undefined
     ? `🌡️ ${p.measuredTemp.toFixed(1)} °C (medido)` : "🌡️ Sin medir";
   $("holo-answers").textContent = `💬 ${p.answersCount} respuestas`;
@@ -2024,6 +2247,41 @@ function waitForUserAnswer() {
 $("btn-yes").addEventListener("click", () => S.awaitingAnswer && S.awaitingAnswer("yes"));
 $("btn-no").addEventListener("click", () => S.awaitingAnswer && S.awaitingAnswer("no"));
 
+/* ═══════════ ENTORNOS VIRTUALES ═══════════ */
+function applyEnvBg() {
+  const env = S.envScene;
+  $("env-hospital").hidden = env !== "hospital";
+  $("env-tent").hidden = env !== "tent";
+  $("room-bg").style.display = env === "camera" ? "" : "none";
+  document.querySelectorAll("#env-switch button").forEach(b =>
+    b.classList.toggle("on", b.dataset.envscene === env));
+  $("scene-mode-label").textContent =
+    env === "camera" ? "📷 Cámara real · MR Passthrough" :
+    env === "tent" ? "⛺ Carpa de atención médica" : "🏥 Sala de hospital";
+}
+
+function setSceneEnv(kind) {
+  VitalAudio.unlock();
+  if (kind === "camera") {
+    if (!S.cameraOn) toggleCamera(); // al activarse fija envScene="camera"
+    else applyEnvBg();
+    return;
+  }
+  S.virtualEnv = kind;
+  S.envScene = kind;
+  if (S.cameraOn) toggleCamera(); // su rama de apagado es síncrona y restaura el entorno
+  applyEnvBg();
+  if (kind === "tent") {
+    Device.addDrift(0.1);
+    log("⛺ Entorno virtual: Carpa de Atención Médica (triage de campaña). El polvo y el calor de campaña añaden +0.1 °C de deriva al sensor.");
+    Device.oled({ top: "ENTORNO · CAMPAÑA", main: "⛺ Carpa médica", sub: "Condiciones de campo: vigila la deriva del sensor IR" });
+  } else {
+    log("🏥 Entorno virtual: Sala de Hospital.");
+    Device.oled({ top: "ENTORNO · HOSPITAL", main: "🏥 Sala de hospital", sub: "Unidad de triaje · condiciones controladas" });
+  }
+  refreshEnvUI();
+}
+
 /* ═══════════ CÁMARA MR + GESTOS ═══════════ */
 let motionPrev = null, motionCooldown = 0, motionRun = 0;
 async function toggleCamera() {
@@ -2035,8 +2293,9 @@ async function toggleCamera() {
     $("mr-hud").hidden = true;
     $("face-guide").hidden = S.phase !== "selfscan";
     $("btn-camera").classList.remove("on");
-    $("scene-mode-label").textContent = "Sala virtual";
-    log("Cámara MR desactivada. Se muestra la sala virtual.");
+    S.envScene = S.virtualEnv;
+    applyEnvBg();
+    log("Cámara MR desactivada. Se muestra el entorno virtual seleccionado.");
     if (!S.patient) $("scene-empty").style.display = "";
     return;
   }
@@ -2047,15 +2306,18 @@ async function toggleCamera() {
     $("face-guide").hidden = false;
     $("mr-hud").hidden = false;
     $("btn-camera").classList.add("on");
-    $("scene-mode-label").textContent = "📷 Tu entorno real + dispositivo virtual (MR)";
+    S.envScene = "camera";
+    applyEnvBg();
     $("scene-empty").style.display = "none";
     log("📷 Cámara MR activa: tu entorno real se fusiona con la unidad V.I.T.A.L. En la autoevaluación, mueve la mano a la derecha para decir SÍ y a la izquierda para NO.", "ok");
     Device.say("Cámara activada", "Realidad mixta en marcha. Tu entorno y el dispositivo ahora comparten escena.", {});
     const runId = ++motionRun;
     requestAnimationFrame(() => motionLoop(runId));
   } catch (e) {
+    S.envScene = S.virtualEnv;
+    applyEnvBg();
     log("No se pudo acceder a la cámara (" + e.name + "). La MR con cámara requiere permiso y HTTPS.", "bad");
-    Device.say("Sin cámara", "No se pudo activar la cámara. Seguimos en la sala virtual.", {});
+    Device.say("Sin cámara", "No se pudo activar la cámara. Seguimos en el entorno virtual.", {});
   }
 }
 
@@ -2121,6 +2383,216 @@ function voiceCommand() {
   rec.onend = () => Device.setListening(false);
   try { rec.start(); } catch (e) { Device.setListening(false); }
 }
+
+/* ═══════════ WebXR BÁSICO (gafas VR/MR) + vista previa 3D ═══════════
+   Proyecta una escena 3D (entorno + panel V.I.T.A.L flotante con datos en
+   vivo) en visores compatibles mediante la WebXR API. Sin visor disponible,
+   ofrece una vista previa 3D WebGL en pantalla controlable por arrastre. */
+const XRView = (() => {
+  let gl = null, prog = null, uMvp, uColor, uTex, uUseTex, aPos, aUv, quadBuf, panelTex = null;
+  let session = null, refSpace = null, mode = null, rafScreen = 0; // mode: 'xr' | 'screen'
+  let yaw = 0, pitch = 0, dragging = false, px = 0, py = 0, lastDraw = 0;
+  const panel = document.createElement("canvas"); panel.width = 512; panel.height = 300;
+
+  const VS = "attribute vec3 p; attribute vec2 uv; uniform mat4 m; varying vec2 vUv;" +
+             "void main(){ vUv = uv; gl_Position = m * vec4(p, 1.0); }";
+  const FS = "precision mediump float; varying vec2 vUv; uniform vec4 c; uniform sampler2D t; uniform float useTex;" +
+             "void main(){ gl_FragColor = useTex > 0.5 ? texture2D(t, vUv) : c; }";
+
+  function initGL() {
+    if (gl) return true;
+    const canvas = $("xr-canvas");
+    gl = canvas.getContext("webgl", { xrCompatible: true, alpha: false, antialias: true });
+    if (!gl) return false;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog); gl.useProgram(prog);
+    aPos = gl.getAttribLocation(prog, "p"); aUv = gl.getAttribLocation(prog, "uv");
+    uMvp = gl.getUniformLocation(prog, "m"); uColor = gl.getUniformLocation(prog, "c");
+    uTex = gl.getUniformLocation(prog, "t"); uUseTex = gl.getUniformLocation(prog, "useTex");
+    quadBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -0.5,-0.5,0, 0,0,   0.5,-0.5,0, 1,0,   -0.5,0.5,0, 0,1,
+       0.5,-0.5,0, 1,0,   0.5, 0.5,0, 1,1,   -0.5,0.5,0, 0,1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(aPos); gl.enableVertexAttribArray(aUv);
+    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 20, 0);
+    gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 20, 12);
+    panelTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, panelTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.enable(gl.DEPTH_TEST);
+    return true;
+  }
+
+  /* Mini-librería mat4 (column-major, compatible con WebXR) */
+  const M = {
+    ident: () => new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]),
+    mul: (a, b) => { const o = new Float32Array(16);
+      for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++)
+        o[c*4+r] = a[r]*b[c*4] + a[4+r]*b[c*4+1] + a[8+r]*b[c*4+2] + a[12+r]*b[c*4+3];
+      return o; },
+    persp: (fov, asp, n, f) => { const t = 1 / Math.tan(fov / 2), o = new Float32Array(16);
+      o[0] = t / asp; o[5] = t; o[10] = (f + n) / (n - f); o[11] = -1; o[14] = 2 * f * n / (n - f); return o; },
+    trans: (x, y, z) => { const o = M.ident(); o[12] = x; o[13] = y; o[14] = z; return o; },
+    scale: (x, y, z) => { const o = M.ident(); o[0] = x; o[5] = y; o[10] = z; return o; },
+    rotX: a => { const o = M.ident(), c = Math.cos(a), s = Math.sin(a); o[5] = c; o[6] = s; o[9] = -s; o[10] = c; return o; },
+    rotY: a => { const o = M.ident(), c = Math.cos(a), s = Math.sin(a); o[0] = c; o[2] = -s; o[8] = s; o[10] = c; return o; },
+  };
+
+  /* Panel flotante: se redibuja con los datos en vivo del dispositivo */
+  function drawPanelTexture(force) {
+    const now = performance.now();
+    if (!force && now - lastDraw < 700) return;
+    lastDraw = now;
+    const g = panel.getContext("2d");
+    const grad = g.createLinearGradient(0, 0, 0, 300);
+    grad.addColorStop(0, "#0d1b2e"); grad.addColorStop(1, "#05080f");
+    g.fillStyle = grad; g.fillRect(0, 0, 512, 300);
+    g.strokeStyle = "rgba(56,189,248,.6)"; g.lineWidth = 3; g.strokeRect(4, 4, 504, 292);
+    g.fillStyle = "#67e8f9"; g.font = "700 20px sans-serif";
+    g.fillText("V.I.T.A.L · " + (S.envScene === "tent" ? "CARPA MÉDICA" : S.envScene === "camera" ? "MR PASARELAS" : "HOSPITAL"), 24, 38);
+    const led = Device.getLED();
+    g.beginPath(); g.arc(478, 30, 13, 0, 7);
+    g.fillStyle = led === "red" ? "#ef4444" : led === "yellow" ? "#facc15" : led === "green" ? "#22c55e" : "#475569"; g.fill();
+    const t = S.liveTemp !== null ? S.liveTemp : S.lastTemp;
+    g.fillStyle = "#f0f9ff"; g.font = "800 62px sans-serif";
+    g.fillText(t !== null && t !== undefined ? t.toFixed(1) + " °C" : "--.- °C", 24, 114);
+    g.font = "600 19px sans-serif"; g.fillStyle = "#93c5fd";
+    g.fillText(($("oled-main").textContent || "Sistema listo").slice(0, 40), 24, 156);
+    g.font = "16px sans-serif"; g.fillStyle = "#7d93b8";
+    g.fillText(($("oled-sub").textContent || "").slice(0, 50), 24, 182);
+    if (S.patient) { g.fillStyle = "#a5f3fc"; g.font = "600 18px sans-serif"; g.fillText("👤 " + S.patient.name + " · " + S.patient.age + " años", 24, 222); }
+    g.fillStyle = "#5eead4"; g.font = "15px sans-serif";
+    g.fillText(led ? "Estado: " + LEVELS[led].name : "Sin evaluación", 24, 252);
+    g.fillStyle = "#64748b"; g.fillText(new Date().toLocaleTimeString("es", { hour12: false }), 24, 278);
+    if (gl && panelTex) { gl.bindTexture(gl.TEXTURE_2D, panelTex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, panel); }
+  }
+
+  function quad(mvp, rgba, useTex) {
+    gl.uniformMatrix4fv(uMvp, false, mvp);
+    gl.uniform1f(uUseTex, useTex ? 1 : 0);
+    if (useTex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, panelTex); gl.uniform1i(uTex, 0); }
+    else gl.uniform4fv(uColor, rgba);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  function renderScene(proj, view) {
+    drawPanelTexture(false);
+    const env = S.envScene;
+    const wallC = env === "tent" ? [0.55, 0.47, 0.28, 1] : env === "camera" ? [0.05, 0.08, 0.13, 1] : [0.62, 0.75, 0.86, 1];
+    const floorC = env === "tent" ? [0.45, 0.36, 0.2, 1] : [0.35, 0.45, 0.55, 1];
+    gl.clearColor(wallC[0], wallC[1], wallC[2], 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const base = M.mul(proj, view);
+    // pared trasera, suelo y rejilla
+    quad(M.mul(base, M.mul(M.trans(0, 1.2, -4.2), M.scale(9, 4.6, 1))), wallC, false);
+    quad(M.mul(base, M.mul(M.mul(M.trans(0, -1.1, -2.2), M.rotX(-Math.PI / 2)), M.scale(9, 4.5, 1))), floorC, false);
+    for (let i = -3; i <= 3; i++)
+      quad(M.mul(base, M.mul(M.mul(M.trans(i * 0.9, -1.09, -2.2), M.rotX(-Math.PI / 2)), M.scale(0.03, 4.5, 1))), [0.78, 0.87, 0.96, 1], false);
+    // panel V.I.T.A.L flotante con datos en vivo + su LED
+    const bob = Math.sin(performance.now() / 900) * 0.03;
+    quad(M.mul(base, M.mul(M.trans(0, 0.25 + bob, -1.7), M.scale(1.15, 0.67, 1))), null, true);
+    const led = Device.getLED();
+    const lc = led === "red" ? [0.94, 0.27, 0.27, 1] : led === "yellow" ? [0.98, 0.8, 0.08, 1] : led === "green" ? [0.13, 0.77, 0.37, 1] : [0.3, 0.36, 0.45, 1];
+    quad(M.mul(base, M.mul(M.trans(0, -0.22 + bob, -1.69), M.scale(0.16, 0.05, 1))), lc, false);
+    // cruz médica decorativa
+    quad(M.mul(base, M.mul(M.trans(-1.15, 0.35, -2.1), M.scale(0.09, 0.3, 1))), [0.9, 0.25, 0.25, 1], false);
+    quad(M.mul(base, M.mul(M.trans(-1.15, 0.35, -2.1), M.scale(0.3, 0.09, 1))), [0.9, 0.25, 0.25, 1], false);
+  }
+
+  /* ── Sesión WebXR real en el visor ── */
+  async function startXRSession(xrMode) {
+    if (!initGL()) throw new Error("WebGL no disponible");
+    const canvas = $("xr-canvas");
+    if (canvas.makeXRCompatible) await canvas.makeXRCompatible();
+    session = await navigator.xr.requestSession(xrMode, { optionalFeatures: ["local-floor", "bounded-floor", "local"] });
+    session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+    try { refSpace = await session.requestReferenceSpace("local"); }
+    catch (e) { refSpace = await session.requestReferenceSpace("viewer"); }
+    mode = "xr";
+    session.addEventListener("end", () => { session = null; mode = null; log("🥽 Sesión VR/MR finalizada."); });
+    log("🥽 Sesión " + xrMode + " iniciada: la escena V.I.T.A.L está en tu visor.", "ok");
+    Device.say("Modo inmersivo activo", "Escena V.I.T.A.L proyectada en tu visor.", {});
+    session.requestAnimationFrame(onXRFrame);
+  }
+  function onXRFrame(t, frame) {
+    if (!session) return;
+    session.requestAnimationFrame(onXRFrame);
+    const layer = session.renderState.baseLayer;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, layer.framebuffer);
+    const pose = frame.getViewerPose(refSpace);
+    if (!pose) { gl.clearColor(0.02, 0.03, 0.06, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); return; }
+    for (const view of pose.views) {
+      const vp = layer.getViewport(view);
+      gl.viewport(vp.x, vp.y, vp.width, vp.height);
+      renderScene(view.projectionMatrix, view.transform.inverse.matrix);
+    }
+  }
+
+  /* ── Vista previa 3D en pantalla (respaldo sin visor) ── */
+  function openScreenPreview() {
+    if (!initGL()) { log("WebGL no está disponible en este navegador.", "bad"); return; }
+    mode = "screen";
+    const overlay = $("xr-overlay"), canvas = $("xr-canvas");
+    overlay.hidden = false;
+    const fit = () => { canvas.width = Math.max(320, canvas.clientWidth * devicePixelRatio); canvas.height = Math.max(240, canvas.clientHeight * devicePixelRatio); };
+    requestAnimationFrame(fit);
+    log("🥽 Sin visor WebXR disponible: vista previa VR/MR en pantalla. Arrastra para mirar alrededor del panel V.I.T.A.L.", "warn");
+    Device.say("Vista previa inmersiva", "Arrastra para mirar alrededor del panel V.I.T.A.L.", {});
+    const loop = () => {
+      if (mode !== "screen") return;
+      rafScreen = requestAnimationFrame(loop);
+      if (canvas.clientWidth && (canvas.width !== canvas.clientWidth * devicePixelRatio)) fit();
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      renderScene(M.persp(1.15, canvas.width / canvas.height, 0.1, 60), M.mul(M.rotX(pitch), M.rotY(yaw)));
+    };
+    loop();
+  }
+  function closeScreenPreview() {
+    mode = null; cancelAnimationFrame(rafScreen);
+    $("xr-overlay").hidden = true;
+  }
+
+  async function enter() {
+    VitalAudio.unlock();
+    if (mode === "screen") { closeScreenPreview(); return; }
+    if (mode === "xr") { log("🥽 Ya hay una sesión VR/MR activa en el visor (usa el menú del visor para salir)."); return; }
+    if (navigator.xr) {
+      const candidates = [];
+      if (await navigator.xr.isSessionSupported("immersive-ar").catch(() => false)) candidates.push("immersive-ar");
+      if (await navigator.xr.isSessionSupported("immersive-vr").catch(() => false)) candidates.push("immersive-vr");
+      for (const m of candidates) {
+        try { await startXRSession(m); return; }
+        catch (e) { log("No se pudo iniciar " + m + " (" + e.message + ").", "warn"); }
+      }
+      if (!candidates.length) log("🥽 Hay WebXR, pero ningún visor VR/MR disponible en este dispositivo.", "warn");
+    } else {
+      log("🥽 WebXR no está disponible en este navegador (prueba Chrome/Edge en Android o el navegador de un visor Quest/Pico).", "warn");
+    }
+    openScreenPreview();
+  }
+
+  // Mirar alrededor arrastrando en la vista previa
+  document.addEventListener("pointerdown", e => {
+    if (mode !== "screen" || e.target !== $("xr-canvas")) return;
+    dragging = true; px = e.clientX; py = e.clientY;
+  });
+  document.addEventListener("pointermove", e => {
+    if (!dragging || mode !== "screen") return;
+    yaw -= (e.clientX - px) * 0.004;
+    pitch = Math.max(-0.9, Math.min(0.9, pitch - (e.clientY - py) * 0.003));
+    px = e.clientX; py = e.clientY;
+  });
+  document.addEventListener("pointerup", () => dragging = false);
+  $("btn-xr-exit").addEventListener("click", closeScreenPreview);
+
+  return { enter, closeScreenPreview, get mode() { return mode; } };
+})();
 
 /* ═══════════ MODOS Y CABLEADO DE UI ═══════════ */
 function setMode(mode) {
@@ -2200,7 +2672,10 @@ function bindUI() {
   $("btn-hud-self").addEventListener("click", startSelfCheck);
 
   // Barra superior
-  $("btn-camera").addEventListener("click", toggleCamera);
+  $("btn-camera").addEventListener("click", () => setSceneEnv(S.cameraOn ? S.virtualEnv : "camera"));
+  document.querySelectorAll("#env-switch button").forEach(b =>
+    b.addEventListener("click", () => setSceneEnv(b.dataset.envscene)));
+  $("btn-xr").addEventListener("click", () => XRView.enter());
   $("btn-thermal").addEventListener("click", e => {
     S.thermal = !S.thermal;
     $("scene").classList.toggle("thermal", S.thermal);
@@ -2247,6 +2722,7 @@ buildQuestionChips();
 bindUI();
 setModeUI();
 refreshChips();
+applyEnvBg();
 refreshEnvUI();
 Device.oled({ top: "V.I.T.A.L OS v2.1", main: "Sistema listo", sub: "Elige Misión Triaje o Laboratorio para comenzar" });
 log("Sistema V.I.T.A.L iniciado. Todos los sensores operativos.", "sys");
