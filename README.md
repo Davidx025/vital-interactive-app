@@ -93,11 +93,17 @@ dentro del visor**, construido con primitivas WebGL (planos y cajas):
   directo del patrón de three.js `renderer.xr.enabled = true` +
   `renderer.setAnimationLoop(...)` (la app es WebGL vanilla, sin
   dependencias, para seguir siendo un único `index.html` autónomo).
-- **Disposición frontal y central:** el dispositivo V.I.T.A.L 3D (réplica
-  de gran escala con textura en alta resolución: OLED nítida, lente IR,
-  LEDs y rejillas) y el panel de control aparecen **directamente frente
-  a la vista del usuario**, frente a la camilla — sin elementos repartidos
-  a los lados —. Los 7 botones 3D son grandes y legibles:
+- **Disposición frontal y central, sin colisiones:** el conjunto de la
+  estación flota frente a la camilla con organización vertical limpia —
+  **arriba** el dispositivo V.I.T.A.L 3D (réplica de gran escala con
+  textura en alta resolución: OLED nítida, lente IR, LEDs y rejillas) y
+  **abajo, sin traslape**, el panel táctil de botones —. El panel está
+  **elevado en Y y adelantado en Z (z ≈ −1.0)** respecto al frente de la
+  camilla (z ≈ −1.1 en Hospital y z ≈ −1.2 en Carpa), de modo que
+  **ninguna figura ni mueble lo atraviesa ni lo tapa** en ninguno de los
+  dos entornos. Además, la interfaz se dibuja en una **pasada final con
+  el test de profundidad activo** (equivalente a un `renderOrder` alto):
+  primero la habitación y el paciente, y la interfaz siempre al frente.
   **[🌡️ ESCANEAR] · [📋 EVALUAR] · [👍 SÍ] · [👎 NO] ·
   [👤 AUTOEVALUACIÓN] · [🎲 NUEVO PACIENTE] · [🚪 SALIR DE VR]**.
 - **Arranque automático sin callejones sin salida:** al entrar en VR la

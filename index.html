@@ -2420,7 +2420,7 @@ const XRView = (() => {
   let session = null, refSpace = null, mode = null, rafScreen = 0; // mode: 'xr' | 'screen'
   let yaw = 0, pitch = 0, dragging = false, moved = false, px = 0, py = 0, downT = 0;
   let lastDraw = 0, lastDevDraw = 0, lastBtnDraw = 0, btnSig = "", holoKey = "", hoverId = null;
-  let _lasers = [], _forehead = [0, 0.4, -2.6], _devPos = [0.68, 0.16, -1.28];
+  let _lasers = [], _forehead = [0, 0.4, -2.6], _devPos = [0, 0.56, -1.4];
   const panel = document.createElement("canvas"); panel.width = 512; panel.height = 300;
   const monPanel = document.createElement("canvas"); monPanel.width = 256; monPanel.height = 160;
   const devPanel = document.createElement("canvas"); devPanel.width = 640; devPanel.height = 875; // 1.25× para una OLED nítida
@@ -2459,7 +2459,8 @@ const XRView = (() => {
     gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 20, 12);
     panelTex = makeTex(); monitorTex = makeTex(); deviceTex = makeTex(); holoTex = makeTex(); headerTex = makeTex();
     drawHeaderTexture();
-    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.DEPTH_TEST);              // depthTest SIEMPRE activo…
+    gl.depthFunc(gl.LEQUAL);               // …la interfaz se dibuja la última y gana
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     return true;
   }
@@ -2803,8 +2804,11 @@ const XRView = (() => {
     { id: "newpat", label: "🎲 NUEVO PACIENTE", sub: "Aleatorio: nueva ficha en 3D",  color: "#a16207", lx: 0.25,  ly: -0.17 },
     { id: "exit",   label: "🚪 SALIR DE VR",    sub: "Terminar sesión · pantalla 2D", color: "#ea580c", lx: 0, ly: -0.375, wide: true },
   ];
-  // Disposición FRONTAL Y CENTRAL: panel frente a la camilla, bajo el dispositivo
-  const CP = { c: [0, -0.78, -1.28], ry: 0 };
+  // Disposición FRONTAL Y CENTRAL: panel ELEVADO (Y) y ADELANTADO (Z), flotando
+  // libre FRENTE a la camilla — su frente más próximo llega a z≈−1.12 (Hospital)
+  // y z≈−1.19 (Carpa); el panel vive en z=−1.02, bajo el dispositivo y sin que
+  // ninguna figura ni mueble lo tape ni lo atraviese.
+  const CP = { c: [0, -0.6, -1.02], ry: 0 };
   for (const b of BUTTONS) {
     b.w = b.wide ? 0.98 : 0.46; b.h = 0.175; b.pressT = 0; b.tex = null;
     b.cv = document.createElement("canvas"); b.cv.width = 320; b.cv.height = 140;
@@ -2896,17 +2900,23 @@ const XRView = (() => {
     const bobH = Math.sin(performance.now() / 1100) * 0.015;
     face(base, 0, bedTopY + 1.18 + bobH, headZ + 0.02, {}, 1.0, 0.52, { c: [0.2, 0.8, 1, 0.16] });
     face(base, 0, bedTopY + 1.18 + bobH, headZ + 0.045, {}, 0.94, 0.47, { tex: holoTex });
+    // ★ PASADA DE INTERFAZ (equivalente a renderOrder alto en three.js):
+    //   habitación, cama/camilla, paciente y holograma ya están dibujados;
+    //   limpiamos SOLO la profundidad y dibujamos la interfaz (dispositivo +
+    //   panel) la ÚLTIMA y más cerca del ojo → ningún mueble puede taparla.
+    gl.clear(gl.DEPTH_BUFFER_BIT);
     // dispositivo V.I.T.A.L 3D: chasis con cara frontal reactiva (OLED/LEDs/rejillas)
-    const bob = Math.sin(performance.now() / 900) * 0.018;
+    const bob = Math.sin(performance.now() / 900) * 0.012;
     const led = Device.getLED();
     if (led) { // halo según el LED activo
       const hc = led === "red" ? [1, 0.25, 0.25, 0.16] : led === "yellow" ? [1, 0.85, 0.2, 0.16] : [0.2, 0.9, 0.4, 0.16];
-      face(base, 0, 0.1 + bob, -1.515, {}, 0.66, 0.84, { c: hc });
+      face(base, 0, 0.34 + bob, -1.515, {}, 0.66, 0.8, { c: hc });
     }
-    // Dispositivo CENTRADO frente a la vista (y frente a la camilla), a gran escala
-    box(base, 0, 0.1 + bob, -1.48, 0.5, 0.685, 0.05,
+    // Dispositivo CENTRADO y ELEVADO (bloque superior del conjunto): su borde
+    // inferior (y ≈ −0.01 con flotación) queda por encima del panel (tope −0.08)
+    box(base, 0, 0.34 + bob, -1.48, 0.5, 0.685, 0.05,
       { c: [0.82, 0.83, 0.85, 1], tex: deviceTex, back: [0.6, 0.62, 0.65, 1], top: [0.9, 0.9, 0.92, 1] });
-    _devPos = [0, 0.32 + bob, -1.44];
+    _devPos = [0, 0.56 + bob, -1.4];
     // haz infrarrojo durante el escaneo VR
     if (XRView._scanning) drawBeam(base, _devPos, _forehead, XRView._scanT || 0);
     // pantalla informativa a la espalda (legible al girar 180°)
@@ -3009,6 +3019,7 @@ const XRView = (() => {
   }
 
   function renderScene(proj, view) {
+    gl.enable(gl.DEPTH_TEST); // reafirmado en cada pasada: fondo vs interfaz ordenados
     // Sin tickTextures() aquí: se llama una vez por frame en el bucle; hacerlo por
     // ojo duplicaba subidas de textura y podía corromper el primer ojo (izquierdo).
     const env = S.envScene;
