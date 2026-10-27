@@ -81,16 +81,41 @@ El botón **🥽 Entrar en VR/MR** usa la **WebXR API** (`immersive-ar` /
 `immersive-vr`) y convierte la escena en un **puesto de triaje jugable
 dentro del visor**, construido con primitivas WebGL (planos y cajas):
 
+- **Renderizado estereoscópico correcto (Meta Quest):** el bucle de
+  render es el nativo de WebXR — la sesión pide cada frame y se dibuja
+  **una pasada por ojo** usando la matriz de proyección, la vista y el
+  *viewport* que WebXR asigna a cada ojo (`pose.views`), sin viewports
+  fijos del tamaño del canvas ni tijeras (scissor) forzadas. El MSAA se
+  solicita en la capa `XRWebGLLayer` (no en el contexto del canvas, que
+  podía dejar el **ojo izquierdo en negro** en Quest), el contexto se
+  crea con `xrCompatible` antes de la sesión y las texturas dinámicas se
+  suben una sola vez por frame, nunca entre ojo y ojo. Es el equivalente
+  directo del patrón de three.js `renderer.xr.enabled = true` +
+  `renderer.setAnimationLoop(...)` (la app es WebGL vanilla, sin
+  dependencias, para seguir siendo un único `index.html` autónomo).
 - **Disposición frontal y central:** el dispositivo V.I.T.A.L 3D (réplica
   de gran escala con textura en alta resolución: OLED nítida, lente IR,
   LEDs y rejillas) y el panel de control aparecen **directamente frente
   a la vista del usuario**, frente a la camilla — sin elementos repartidos
-  a los lados —. Los botones 3D son grandes y legibles:
-  **[🌡️ ESCANEAR] · [👍 SÍ] · [👎 NO] · [📋 EVALUAR]**.
-- **Modo «Jugador como Paciente» por defecto:** al entrar en VR/MR, el
-  usuario **es el paciente** de la unidad de triaje. Al pulsar ESCANEAR,
-  el sensor infrarrojo simula la toma sobre su frente y asigna una
-  **temperatura realista aleatoria entre 36.2 °C y 39.8 °C**.
+  a los lados —. Los 7 botones 3D son grandes y legibles:
+  **[🌡️ ESCANEAR] · [📋 EVALUAR] · [👍 SÍ] · [👎 NO] ·
+  [👤 AUTOEVALUACIÓN] · [🎲 NUEVO PACIENTE] · [🚪 SALIR DE VR]**.
+- **Arranque automático sin callejones sin salida:** al entrar en VR la
+  estación nunca muestra el error *«no hay paciente seleccionado»*: si ya
+  había un paciente elegido en la pantalla 2D se conserva; si no hay
+  ninguno, se activa por defecto la **Autoevaluación (Jugador)**.
+- **Menú 3D de selección de paciente in-VR:** dos botones del panel
+  permiten gestionar quién está en la camilla **sin salir del visor**:
+  **[👤 Autoevaluación (Jugador)]** (el usuario es el paciente, con
+  constantes aleatorias asignadas por el sensor: 36.2–39.8 °C) y
+  **[🎲 Nuevo Paciente Aleatorio]** (genera y carga al instante una ficha
+  clínica completa — nombre, edad, sexo, riesgo y síntomas por descubrir —
+  con su avatar sobre la camilla y en el holograma).
+- **Botón 3D [🚪 Salir de VR]:** prominente y siempre activo en la fila
+  inferior del panel; al pulsarlo con el gatillo (o decir «salir») se
+  ejecuta `session.end()` (el equivalente a
+  `renderer.xr.getSession()?.end()`), la sesión WebXR termina limpiamente
+  y la app regresa a la pantalla 2D.
 - **Flujo de preguntas clínicas por defecto y dinámicas:** se carga una
   secuencia predeterminada que se muestra prominente en la OLED —
   *1. ¿Tienes fiebre o escalofríos? → 2. ¿Te cuesta respirar? →
